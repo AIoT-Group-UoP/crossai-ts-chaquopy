@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 from scipy.stats import kurtosis, moment, skew
 from scipy.signal import butter, filtfilt, find_peaks
-from typing import Union
+from typing import List, Union
 
 
 def std_value(
@@ -164,7 +164,7 @@ def zcr_value(array: np.ndarray) -> float:
     Returns:
         float: The zero crossing rate of the signal.
     """
-    return np.sum(np.multiply(array[0:-1], array[1:]) < 0) / (len(array) - 1)
+    return float(np.sum(np.multiply(array[0:-1], array[1:]) < 0) / (len(array) - 1))
 
 
 def dominant_frequency(
@@ -324,7 +324,7 @@ def envelope_energy_peak_detection(
     Returns:
 
     """
-    names = []
+    names: List[str] = []
 
     f_nyq = fs/2
     n_peaks = []
@@ -369,7 +369,6 @@ def signal_stats(
     """
 
     return {
-
         f"{name}_max": max_value(arr, axis=axis),
         f"{name}_min": min_value(arr, axis=axis),
         f"{name}_mean": mean_value(arr, axis=axis),
@@ -380,7 +379,7 @@ def signal_stats(
         f"{name}_skewness": sample_skewness(arr),
         f"{name}_rms": rms_value(arr),
         f"{name}_zcr": zcr_value(arr),
-        f"{name}_dominant_frequency": dominant_frequency(arr),
+        f"{name}_dominant_frequency": dominant_frequency(arr, fs=fs),
         f"{name}_crest_factor": crest_factor(arr),
         f"{name}_signal_length": signal_length(arr, fs=fs, time_mode=time_mode)
     }

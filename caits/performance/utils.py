@@ -1,6 +1,6 @@
 from scipy.interpolate import interp1d
 import numpy as np
-from typing import Union, Optional, Any
+from typing import List, Union, Optional, Any
 TensorLike = Union[np.ndarray, Any]
 
 
@@ -8,7 +8,7 @@ def interpolate_probas(
         probabilities: np.ndarray,
         sampling_rate: int,
         Ws: float,
-        n_points: int = None,
+        n_points: Optional[int] = None,
         kind: Optional[str] = "cubic",
         clamp: Optional[bool] = True
 ) -> np.ndarray:
@@ -76,8 +76,8 @@ def interpolate_probas(
 
 def get_gt_events_from_dict(
         events: dict,
-        class_names: list[str],
-        sr: int = None
+        class_names: List[str],
+        sr: Optional[int] = None
 ) -> dict:
     """Extracts and optionally converts start and end intervals from a given
     JSON structure to samples. The output is a dictionary keyed by the original

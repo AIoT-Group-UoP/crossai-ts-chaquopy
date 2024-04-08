@@ -1,7 +1,6 @@
 import pandas as pd
-import numpy as np
 import soundfile as sf
-from typing import Union, List
+from typing import Literal, Union, List
 import boto3
 import io
 
@@ -36,7 +35,7 @@ def s3_audio_loader(
         mode: str = "soundfile",
         format: str = "wav",
         channels: List[str] = ["channel_1"],
-        export: str = "dict"
+        export: Literal['df', 'dict'] = "dict"
 ) -> Union[pd.DataFrame, dict]:
     """Loads audio files from a directory into a DataFrame.
 

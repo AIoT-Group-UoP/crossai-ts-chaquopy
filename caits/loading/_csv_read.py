@@ -2,14 +2,14 @@ import os
 import pandas as pd
 import glob
 from tqdm import tqdm
-from typing import Union, List, Optional
+from typing import Any, Dict, Literal, Union, List, Optional
 
 
 def csv_loader(
         dataset_path: str,
         header: Union[None, int, str] = "infer",
-        channels: Union[List[str], None] = None,
-        export: str = "dict",
+        channels: Optional[List[str]] = None,
+        export: Literal['dict', 'df'] = "dict",
         classes: Optional[List[str]] = None
 ) -> Union[pd.DataFrame, dict]:
     """Loads CSV files from a directory into a DataFrame or dictionary.
@@ -43,7 +43,7 @@ def csv_loader(
             try:
                 # Load the CSV file, specifying header
                 # and column names if provided
-                read_csv_kwargs = {'header': header}
+                read_csv_kwargs: Dict[str, Any] = {'header': header}
                 if channels is not None:
                     read_csv_kwargs['usecols'] = channels
 

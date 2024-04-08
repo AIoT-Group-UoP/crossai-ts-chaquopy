@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Union, Optional, Any
+from typing import List, Union, Optional, Any
 TensorLike = Union[np.ndarray, Any]
 
 
@@ -29,7 +29,7 @@ _stats_functions = {
 
 def prediction_statistics(
         probabilities: TensorLike,
-        stats: Optional[Union[list[str], str]] = "all"
+        stats: Optional[Union[List[str], str]] = "all"
 ) -> dict:
     """Analyzes prediction probabilities to assess model trustworthiness
     and training adequacy. This function computes statistics from prediction

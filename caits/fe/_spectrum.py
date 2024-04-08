@@ -1,3 +1,4 @@
+from typing import Optional, Tuple
 import numpy as np
 import scipy
 from scipy.signal import stft
@@ -38,10 +39,10 @@ def compute_spectrogram(
         fs: int,
         window: str = "hann",
         nperseg: int = 256,
-        noverlap: int = None,
-        nfft: int =None,
-        fmin: float = None,
-        fmax: float = None
+        noverlap: Optional[int] = None,
+        nfft: Optional[int] =None,
+        fmin: Optional[float] = None,
+        fmax: Optional[float] = None
 ):
     """Computes the spectrogram of a signal.
 
@@ -81,11 +82,11 @@ def compute_power_spectrogram(
         fs: int,
         window: str = 'hann',
         nperseg: int = 256,
-        noverlap: int = None,
-        nfft: int = None,
-        fmin: float = None,
-        fmax: float = None
-) -> (np.ndarray, np.ndarray, np.ndarray):
+        noverlap: Optional[int] = None,
+        nfft: Optional[int] = None,
+        fmin: Optional[float] = None,
+        fmax: Optional[float] = None
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Computes the power spectrogram of a signal.
 
     Args:
@@ -127,8 +128,8 @@ def compute_mel_spectrogram(
         n_fft: int = 2048,
         hop_length: int = 512,
         n_mels: int = 128,
-        fmin: float = None,
-        fmax: float = None
+        fmin: Optional[float] = None,
+        fmax: Optional[float] = None
 ) -> np.ndarray:
     """Computes the Mel spectrogram of a signal.
 
@@ -222,7 +223,7 @@ def _hz_to_mel(freq: float) -> float:
     return 2595 * np.log10(1 + freq / 700)
 
 
-def _mel_to_hz(mel: float) -> float:
+def _mel_to_hz(mel: np.ndarray) -> np.ndarray:
     """Converts Mel scale to Hz.
 
     Args:

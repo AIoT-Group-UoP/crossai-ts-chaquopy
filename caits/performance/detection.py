@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 from caits.performance.metrics import intersection_over_union
 
@@ -125,7 +126,7 @@ def apply_duration_threshold(
     return modified_probs
 
 
-def get_continuous_events(threshold_probas: np.ndarray) -> list[tuple]:
+def get_continuous_events(threshold_probas: np.ndarray) -> List[tuple]:
 
     significant_segments = []
 
@@ -146,8 +147,8 @@ def get_continuous_events(threshold_probas: np.ndarray) -> list[tuple]:
 
 
 def classify_events(
-        predicted_events: list[tuple],
-        ground_truth_events: list[tuple],
+        predicted_events: List[tuple],
+        ground_truth_events: List[tuple],
         IoU_th: float,
 ) -> tuple:
     """Classifies predicted events into Insertions, Correct identifications,

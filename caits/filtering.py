@@ -1,4 +1,4 @@
-from typing import Union, List
+from typing import Optional, Tuple, Union, List
 import numpy as np
 from scipy.signal import medfilt
 from scipy.ndimage import median_filter, gaussian_filter
@@ -6,7 +6,7 @@ from scipy.ndimage import median_filter, gaussian_filter
 
 def filter_median_simple(
         array: np.ndarray,
-        kernel_size: int = None
+        kernel_size: Optional[int] = None
 ) -> np.ndarray:
     """Performs a median filter on an N-dimensional array.
 
@@ -71,7 +71,7 @@ def filter_butterworth(
         array: np.ndarray,
         fs: float,
         filter_type: str = 'lowpass',
-        cutoff_freq: Union[float, tuple] = None,
+        cutoff_freq: Optional[Union[float, Tuple[float, float]]] = None,
         order: int = 5,
         analog: bool = False,
         method: str = 'filtfilt',
@@ -126,12 +126,15 @@ def filter_butterworth(
                          "'lowpass', 'highpass', 'bandpass', or 'bandstop'.")
 
     nyquist_freq = 0.5 * fs
+    normalized_cutoff_freq: Optional[Union[float, Tuple[float, float]]] = None
+
     # Normalize cutoff frequency(-ies)
-    if isinstance(cutoff_freq, tuple):
-        normalized_cutoff_freq = (cutoff_freq[0] / nyquist_freq,
-                                  cutoff_freq[1] / nyquist_freq)
-    else:
-        normalized_cutoff_freq = cutoff_freq / nyquist_freq
+    if cutoff_freq is not None:
+        if isinstance(cutoff_freq, tuple):
+            normalized_cutoff_freq = (cutoff_freq[0] / nyquist_freq,
+                                    cutoff_freq[1] / nyquist_freq)
+        else:
+            normalized_cutoff_freq = cutoff_freq / nyquist_freq
 
     # Create Butterworth filter coefficients
     if method == "filtfilt":

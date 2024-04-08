@@ -1,3 +1,4 @@
+from typing import Dict, List, Tuple
 import numpy as np
 import scipy
 
@@ -17,7 +18,7 @@ def spectral_centroid(array: np.ndarray, fs: int) -> float:
     return np.sum(magnitudes * freqs) / sum_mag
 
 
-def spectral_rolloff(array: np.ndarray, fs: int, perc: 0.95) -> float:
+def spectral_rolloff(array: np.ndarray, fs: int, perc: float = 0.95) -> float:
     """Computes the spectral rolloff of a signal, meaning the frequency below
     which a certain percentage of the total spectral energy, e.g. 85%, is
     contained.
@@ -32,7 +33,7 @@ def spectral_rolloff(array: np.ndarray, fs: int, perc: 0.95) -> float:
     """
     magnitudes, _, sum_mag = underlying_spectral(array, fs)
     cumsum_mag = np.cumsum(magnitudes)
-    return np.min(np.where(cumsum_mag >= perc * sum_mag)[0])
+    return float(np.min(np.where(cumsum_mag >= perc * sum_mag)[0]))
 
 
 def spectral_spread(array: np.ndarray, fs: int) -> float:
@@ -94,7 +95,7 @@ def spectral_kurtosis(array: np.ndarray, fs: int) -> float:
 def underlying_spectral(
     array: np.ndarray,
     fs: int
-) -> tuple[np.ndarray, np.ndarray, float]:
+) -> Tuple[np.ndarray, np.ndarray, float]:
 
     magnitudes = np.abs(
         np.fft.rfft(array))  # magnitudes of positive frequencies
@@ -246,10 +247,10 @@ def power_spectral_density(
     fs: int,
     nperseg_th: int = 900,
     noverlap_th: int = 600,
-    freq_cuts: list[tuple[int, int]] = [(0,200),(300,425),(500,650),(950,1150),
+    freq_cuts: List[Tuple[int, int]] = [(0,200),(300,425),(500,650),(950,1150),
                                         (1400,1800),(2300,2400),(2850,2950),
                                         (3800,3900)]
-) -> dict[str, float]:
+) -> Dict[str, float]:
     from scipy.integrate import simps
 
     feat = []
@@ -263,10 +264,9 @@ def power_spectral_density(
         idx_band = np.logical_and(freqs >= lf, freqs <= hf)
         band_power = simps(psd[idx_band], dx=dx_freq)
         feat.append(band_power/total_power)
-    feat = np.array(feat)
     feat_names = [f'PSD_{lf}-{hf}' for lf, hf in freq_cuts]
 
-    return dict(zip(feat_names, feat))
+    return dict(zip(feat_names, np.array(feat)))
 
 
 def zcr_mean(

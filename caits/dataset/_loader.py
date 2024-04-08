@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import List
 import os
 from caits.loading import audio_loader, csv_loader
 from ._dataset import Dataset
@@ -27,7 +27,7 @@ class DataLoader:
     def load_from(
             cls,
             path: str,
-            classes: Optional[list[str]] = None
+            classes: List[str] = []
     ) -> Dataset:
         # check dataset's dir types
         formats = cls._get_file_types(path)

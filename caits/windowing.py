@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Union
+from typing import List, Union
 
 
 def rolling_window_df(
@@ -51,7 +51,7 @@ def sliding_window_df(
         df: pd.DataFrame,
         window_size: int,
         overlap: int
-) -> list[pd.DataFrame]:
+) -> List[pd.DataFrame]:
     """Generate windowed DataFrames based on the specified
     window size and overlap.
 

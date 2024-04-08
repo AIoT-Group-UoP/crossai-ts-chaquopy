@@ -16,7 +16,6 @@ _FloatLike_co = Union[_IntLike_co, float, "np.floating[Any]"]
 _WindowSpec = Union[str, Tuple[Any, ...], float, Callable[[int], np.ndarray],
                     ArrayLike]
 
-_IntLike_co = Union[_BoolLike_co, int, "np.integer[Any]"]
 _ComplexLike_co = Union[_FloatLike_co, complex, "np.complexfloating[Any, Any]"]
 
 
@@ -33,16 +32,3 @@ _STFTPad = Literal[
 _PadModeSTFT = Union[_STFTPad, Callable[..., Any]]
 _SequenceLike = Union[Sequence[_T], np.ndarray]
 _ScalarOrSequence = Union[_T, _SequenceLike[_T]]
-
-_T = TypeVar("_T")
-
-_STFTPad = Literal[
-    "constant",
-    "edge",
-    "linear_ramp",
-    "reflect",
-    "symmetric",
-    "empty",
-]
-
-

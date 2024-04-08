@@ -109,7 +109,7 @@ def stft_lib(
             start = 0
             extra = 0
             padding[-1] = (n_fft // 2, n_fft // 2)
-            y = np.pad(y, padding, mode=pad_mode)
+            y = np.pad(array=y, pad_width=padding, mode=pad_mode) # type: ignore
         else:
             # If tail and head do not overlap, then we can implement padding on each part separately
             # and avoid a full copy-pad
@@ -122,9 +122,9 @@ def stft_lib(
             # fixes bug #1567
             y_pre = np.pad(
                 y[..., : (start_k - 1) * hop_length - n_fft // 2 + n_fft + 1],
-                padding,
+                pad_width=padding,
                 mode=pad_mode,
-            )
+            ) # type: ignore
             y_frames_pre = frame(y_pre, frame_length=n_fft, hop_length=hop_length)
             # Trim this down to the exact number of frames we should have
             y_frames_pre = y_frames_pre[..., :start_k]
@@ -137,7 +137,7 @@ def stft_lib(
                 padding[-1] = (0, n_fft // 2)
                 y_post = np.pad(
                     y[..., (tail_k) * hop_length - n_fft // 2 :], padding, mode=pad_mode
-                )
+                ) # type: ignore
                 y_frames_post = frame(
                     y_post, frame_length=n_fft, hop_length=hop_length
                 )
@@ -411,7 +411,7 @@ def power_to_db_lib(
         ref: Union[float, Callable] = 1.0,
         amin: float = 1e-10,
         top_db: Optional[float] = 80.0,
-) -> Union[np.floating[Any], np.ndarray]:
+) -> np.ndarray:
 
     # The functionality in this implementation are basically derived from
     # librosa v0.10.1:

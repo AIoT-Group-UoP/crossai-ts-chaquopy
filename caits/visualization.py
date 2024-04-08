@@ -138,7 +138,7 @@ def export_fig(
     if tight_layout:
         fig_object.tight_layout()
 
-    if "save" in export:
+    if "save" in export and save_path is not None:
         if not os.path.isdir(save_path):
             raise FileNotFoundError(f"Provided path '{save_path}' does not \
                                       exist or is not a directory.")
@@ -216,7 +216,7 @@ def plot_spectrogram(
         t: np.ndarray,
         spec: np.ndarray,
         factor: int = 1,
-        log: str = None,
+        log: Optional[str] = None,
         plot_title: str = "Spectrogram"
 ) -> None:
     """Plots the spectrogram.

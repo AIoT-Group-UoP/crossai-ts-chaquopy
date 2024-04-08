@@ -3,11 +3,12 @@
 # https://github.com/librosa/librosa/blob/main/librosa/util/utils.py
 # https://github.com/librosa/librosa/blob/main/librosa/filters.py
 # https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
-from typing import Optional, Union, Callable, Tuple, Any, Sequence, List, Dict
+from typing import Optional, Union, Callable, Tuple, Any, Sequence, List
 import numpy as np
 import scipy
 from numpy.typing import ArrayLike, DTypeLike
 from numpy.lib.stride_tricks import as_strided
+import scipy.signal
 from ._typing_base import _FloatLike_co, _WindowSpec
 
 
@@ -64,7 +65,7 @@ def get_window(
     window: Union[str, Tuple[Any, ...], float, Callable[[int], np.ndarray], ArrayLike],
     Nx: int,
     *,
-    fftbins: Optional[bool] = True,
+    fftbins: bool = True,
 ) -> np.ndarray:
     if callable(window):
         return window(Nx)
@@ -97,7 +98,7 @@ def pad_center(
 
     lpad = int((size - n) // 2)
 
-    lengths = [(0, 0)] * data.ndim
+    lengths: List[Tuple[int, int]] = [(0, 0)] * data.ndim
     lengths[axis] = (lpad, int(size - n - lpad))
 
     if lpad < 0:

@@ -6,6 +6,8 @@ from typing import Any, Optional, Union
 import numpy as np
 import scipy
 from numpy.typing import DTypeLike
+import scipy.fftpack
+import scipy.signal
 from typing_extensions import Literal
 from caits.base import expand_to, normalize
 from caits.fe._spectrum_lib import spectrogram_lib, power_to_db_lib
@@ -260,7 +262,7 @@ def hz_to_mel(
 
 def mel_to_hz(
     mels: _ScalarOrSequence[_FloatLike_co], *, htk: bool = False
-) -> Union[np.floating[Any], np.ndarray]:
+) -> np.ndarray:
 
     mels = np.asanyarray(mels)
 

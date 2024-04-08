@@ -1,7 +1,7 @@
 from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
 from pandas import DataFrame
-from typing import List, Dict
+from typing import Any, List, Dict
 from caits.dataset import Dataset
 
 
@@ -18,7 +18,7 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
         transformed_id = X._id
 
         for df in X.X:
-            features_dict = {}
+            features_dict: Dict[str, Any] = {}
 
             for col_name, col_data in df.items():
                 for extractor in self.feature_extractors:

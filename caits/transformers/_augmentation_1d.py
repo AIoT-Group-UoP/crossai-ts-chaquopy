@@ -1,7 +1,9 @@
 from sklearn.base import BaseEstimator, TransformerMixin
-from typing import List, Dict
+from typing import Any, Callable, List, Dict, TypedDict
 from caits.dataset import Dataset
 
+
+Augmentation = TypedDict("Augmentation", {"func": Callable[[Any], None], "params": Dict})
 
 class Augmenter1D(BaseEstimator, TransformerMixin):
     """Augmenter Transformer that applies a list of augmentation functions,
@@ -18,7 +20,7 @@ class Augmenter1D(BaseEstimator, TransformerMixin):
 
     def __init__(
             self,
-            augmentations: List[Dict[str, Dict]],
+            augmentations: List[Augmentation],
             repeats: int = 1
     ):
         self.augmentations = augmentations

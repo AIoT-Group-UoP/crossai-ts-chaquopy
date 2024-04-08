@@ -1,6 +1,6 @@
+from typing import Any, List, Type
 import numpy as np
 from math import log, ceil
-from functools import reduce
 
 
 def normalize_signal(
@@ -26,7 +26,7 @@ def resample_signal(
         sig: np.ndarray,
         native_sr: int,
         g_sr: int,
-        d_type: np.dtype = np.float32
+        d_type: Type[Any] = np.float32
 ) -> np.ndarray:
     """Resamples an input audio buffer to the goal sampling rate. Linear
     resampling using numpy is significantly faster than Librosa's default
@@ -120,7 +120,7 @@ def trim_signal(
 def create_chunks(
         array: np.ndarray,
         chunk_length: int
-) -> list[np.ndarray]:
+) -> List[np.ndarray]:
     """
 
     Args:

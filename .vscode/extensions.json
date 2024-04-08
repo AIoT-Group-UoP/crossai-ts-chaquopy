@@ -2,10 +2,8 @@
     "recommendations": [
         "ms-python.python",
         "charliermarsh.ruff",
-        "zhuangtongfa.material-theme",
-        "ms-python.vscode-pylance",
-        "atommaterial.a-file-icon-vscode",
         "vivaxy.vscode-conventional-commits",
-        "tamasfe.even-better-toml"
+        "tamasfe.even-better-toml",
+        "ms-python.mypy-type-checker"
     ]
 }

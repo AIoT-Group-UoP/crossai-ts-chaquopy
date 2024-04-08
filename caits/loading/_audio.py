@@ -2,7 +2,7 @@ import os
 import wave
 import pandas as pd
 import numpy as np
-from typing import Union, List, Optional
+from typing import Literal, Union, List, Optional
 from tqdm import tqdm
 import glob
 from caits.preprocessing import resample_2d
@@ -10,9 +10,9 @@ from caits.preprocessing import resample_2d
 
 def wav_loader(
         mode: str = "soundfile",
-        file_path: str = None,
-        channels: List[str] = None,
-        target_sr: int = None
+        file_path: Optional[str] = None,
+        channels: Optional[List[str]] = None,
+        target_sr: Optional[int] = None
 ) -> pd.DataFrame:
     """Loads and optionally resamples a mono or multichannel audio
     file into a DataFrame, ensuring the output is always 2D.
@@ -64,8 +64,8 @@ def audio_loader(
         mode: str = "soundfile",
         format: str = "wav",
         channels: list = ["Ch_1"],
-        export: str = "dict",
-        target_sr: int = None,
+        export: Literal['dict', 'df'] = "dict",
+        target_sr: Optional[int] = None,
         classes: Optional[List[str]] = None
 ) -> Union[pd.DataFrame, dict]:
     """Loads audio files from a directory into a DataFrame

@@ -1,5 +1,5 @@
 import pandas as pd
-from typing import Union
+from typing import Literal, Union
 import boto3
 
 
@@ -9,7 +9,7 @@ def s3_csv_loader(
         endpoint_url: str,
         header: Union[None, int, str] = "infer",
         channels: Union[list, None] = None,
-        export: str = "dict"
+        export: Literal['df', 'dict'] = "dict"
 ) -> Union[pd.DataFrame, dict]:
     """Loads CSV files from a directory into a DataFrame.
 

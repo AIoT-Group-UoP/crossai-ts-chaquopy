@@ -1,3 +1,4 @@
+from typing import Optional
 import numpy as np
 from scipy.signal import hilbert
 
@@ -55,8 +56,8 @@ def instantaneous_amplitude_hbt(signal: np.ndarray) -> np.ndarray:
 
 def rolling_rms(
         signal: np.ndarray,
-        frame_length: float,
-        hop_length: float,
+        frame_length: int,
+        hop_length: int,
         padding_mode: str = "constant"
 ) -> np.ndarray:
     """Calculates the rolling Root Mean Square (RMS) of a signal in
@@ -76,10 +77,10 @@ def rolling_rms(
     """
     # Pad the signal on both sides
     pad_width = frame_length // 2
-    padded_signal = np.pad(signal, pad_width, mode=padding_mode)
+    padded_signal = np.pad(signal, pad_width, mode=padding_mode) # type: ignore
 
     # Calculate the number of frames
-    num_frames = 1 + (len(padded_signal) - frame_length) // hop_length
+    num_frames: int = int(1 + (len(padded_signal) - frame_length) // hop_length)
 
     # Initialize an array to store the RMS values
     rms_values = np.zeros(num_frames)
@@ -145,11 +146,11 @@ def rolling_zcr(
     Returns:
         numpy.ndarray: The rolling ZCR of the input signal.
     """
-    sig = None
+    sig = np.array([])
     if center:
         # Reflect padding on both sides for centering frames
         pad_length = frame_length // 2
-        sig = np.pad(array, pad_length, mode=padding_mode)
+        sig = np.pad(array, pad_length, mode=padding_mode) # type: ignore
 
     frames = frame_signal(sig, frame_length, hop_length)
 

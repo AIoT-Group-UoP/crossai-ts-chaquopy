@@ -1,10 +1,11 @@
 # This implementation is basically derived from librosa v0.10.1
 # https://github.com/librosa/librosa/blob/main/librosa/core/audio.py
-from typing import Any
+from typing import Any, cast
 import numpy as np
 import scipy
 import samplerate
 import resampy
+import scipy.signal
 import soxr
 from ._fix import fix_length
 
@@ -28,7 +29,7 @@ def resample(
     n_samples = int(np.ceil(y.shape[axis] * ratio))
 
     if res_type in ("scipy", "fft"):
-        y_hat = scipy.signal.resample(y, n_samples, axis=axis)
+        y_hat = cast(np.ndarray, scipy.signal.resample(y, n_samples, axis=axis))
     elif res_type == "polyphase":
         if int(orig_sr) != orig_sr or int(target_sr) != target_sr:
             raise ValueError(
@@ -42,9 +43,9 @@ def resample(
         orig_sr = int(orig_sr)
         target_sr = int(target_sr)
         gcd = np.gcd(orig_sr, target_sr)
-        y_hat = scipy.signal.resample_poly(
+        y_hat = cast(np.ndarray, scipy.signal.resample_poly(
             y, target_sr // gcd, orig_sr // gcd, axis=axis
-        )
+        ))
     elif res_type in (
         "linear",
         "zero_order_hold",

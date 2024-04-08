@@ -13,6 +13,8 @@
 from typing import Optional
 import numpy as np
 import scipy
+import scipy.ndimage
+import scipy.signal
 
 
 def pcen(

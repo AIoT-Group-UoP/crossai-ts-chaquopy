@@ -2,6 +2,7 @@ from typing import List
 from sklearn.model_selection import train_test_split as sklearn_tts
 from pandas import DataFrame
 import numpy as np
+import numpy.typing as npt
 
 
 class Dataset:
@@ -131,7 +132,7 @@ class Dataset:
 def ArrayToDataset(
         X: np.ndarray,
         y: np.ndarray,
-        _id: np.ndarray = None
+        _id: npt.NDArray[np.str_] = np.array([])
 ) -> Dataset:
     """Converts a 1D NumPy array, in which each row is a DataFrame, to a
     CrossAI Dataset object. The features, labels, and instance IDs are in
@@ -147,16 +148,12 @@ def ArrayToDataset(
     """
 
     if _id is None:
-        _id = []
-        for i in range(len(X)):
-            _id.append("No info available")
-    else:
-        _id = np.ndarray.tolist(_id)
+        _id = np.array(["No info available" for _ in range(len(X))])
 
     return Dataset(
         X=np.ndarray.tolist(X),
         y=np.ndarray.tolist(y),
-        id=_id
+        id=_id.tolist()
     )
 
 
