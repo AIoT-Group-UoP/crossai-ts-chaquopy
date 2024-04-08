@@ -1,0 +1,44 @@
+[tool.ruff]
+line-length = 120
+
+[tool.black]
+line-length = 120
+
+[tool.poetry]
+name = "crossai-ts-chaquopy"
+version = "0.0.0.1"
+description = "An open-source Python library for developing end-to-end AI pipelines for Time Series Analysis"
+authors = [
+    "Pantelis Tzamalis <tzamalis@ceid.upatras.gr>",
+    "George Kontogiannis",
+]
+readme = "README.md"
+packages = [{ include = "caits", from = "." }]
+license = "Apache-2.0"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+typing-extensions = "^4.8.0"
+pandas = "1.3.2"
+numpy = "1.19.5"
+scikit-learn = "1.1.3"
+tsaug = "0.2.1"
+pydub = "0.25.1"
+soundfile = "0.10.3.post1"
+soxr = "0.3.6"
+pyyaml = "6.0.1"
+boto3 = "1.34.66"
+tqdm = "4.66.2"
+resampy = "0.3.1"
+samplerate = "0.1.0"
+matchering = "2.0.2"
+seaborn = "0.12.2"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.3.5"
+black = "^24.3.0"
+pyright = "^1.1.357"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
