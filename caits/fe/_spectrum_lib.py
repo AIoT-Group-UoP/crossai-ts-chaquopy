@@ -1,19 +1,28 @@
 # The functionalities in this implementation are basically derived from
 # librosa v0.10.1:
 # https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
-import numpy as np
-from scipy.signal import stft
-from scipy.signal import get_window
 import warnings
-from typing import Any, Tuple, Optional, Union, Callable
-from numpy import fft
-from numpy.typing import ArrayLike, DTypeLike
-from caits.base import is_positive_int, valid_audio, dtype_r2c, dtype_c2r
-from caits.base import frame, pad_center, expand_to, get_window, tiny
-from caits.base import __overlap_add, window_sumsquare
-from caits.base import fix_length
-from caits.base._typing_base import _WindowSpec, _PadModeSTFT, _ScalarOrSequence, _ComplexLike_co
+from typing import Any, Callable, Optional, Tuple, Union
 
+import numpy as np
+from numpy import fft
+from scipy.signal import get_window
+
+from caits.base import (
+    __overlap_add,
+    dtype_c2r,
+    dtype_r2c,
+    expand_to,
+    fix_length,
+    frame,
+    is_positive_int,
+    pad_center,
+    tiny,
+    valid_audio,
+    window_sumsquare,
+)
+from caits.base._typing_base import _ComplexLike_co, _PadModeSTFT, _ScalarOrSequence, _WindowSpec
+from caits.base.numpy_typing import ArrayLike, DTypeLike
 
 # Constrain STFT block sizes to 256 KB
 MAX_MEM_BLOCK = 2**8 * 2**10
@@ -86,14 +95,10 @@ def stft_lib(
             # >>> my_pad_func = functools.partial(pad_func, foo=x, bar=y)
             # >>> librosa.stft(..., pad_mode=my_pad_func)
 
-            raise ValueError(
-                f"pad_mode='{pad_mode}' is not supported by librosa.stft"
-            )
+            raise ValueError(f"pad_mode='{pad_mode}' is not supported by librosa.stft")
 
         if n_fft > y.shape[-1]:
-            warnings.warn(
-                f"n_fft={n_fft} is too large for input signal of length={y.shape[-1]}"
-            )
+            warnings.warn(f"n_fft={n_fft} is too large for input signal of length={y.shape[-1]}")
 
         # Set up the padding array to be empty, and we'll fix the target dimension later
         padding = [(0, 0) for _ in range(y.ndim)]
@@ -109,7 +114,7 @@ def stft_lib(
             start = 0
             extra = 0
             padding[-1] = (n_fft // 2, n_fft // 2)
-            y = np.pad(array=y, pad_width=padding, mode=pad_mode) # type: ignore
+            y = np.pad(array=y, pad_width=padding, mode=pad_mode)  # type: ignore
         else:
             # If tail and head do not overlap, then we can implement padding on each part separately
             # and avoid a full copy-pad
@@ -124,7 +129,7 @@ def stft_lib(
                 y[..., : (start_k - 1) * hop_length - n_fft // 2 + n_fft + 1],
                 pad_width=padding,
                 mode=pad_mode,
-            ) # type: ignore
+            )  # type: ignore
             y_frames_pre = frame(y_pre, frame_length=n_fft, hop_length=hop_length)
             # Trim this down to the exact number of frames we should have
             y_frames_pre = y_frames_pre[..., :start_k]
@@ -135,12 +140,8 @@ def stft_lib(
             # Determine if we have any frames that will fit inside the tail pad
             if tail_k * hop_length - n_fft // 2 + n_fft <= y.shape[-1] + n_fft // 2:
                 padding[-1] = (0, n_fft // 2)
-                y_post = np.pad(
-                    y[..., (tail_k) * hop_length - n_fft // 2 :], padding, mode=pad_mode
-                ) # type: ignore
-                y_frames_post = frame(
-                    y_post, frame_length=n_fft, hop_length=hop_length
-                )
+                y_post = np.pad(y[..., (tail_k) * hop_length - n_fft // 2 :], padding, mode=pad_mode)  # type: ignore
+                y_frames_post = frame(y_post, frame_length=n_fft, hop_length=hop_length)
                 # How many extra frames do we have from the tail?
                 extra += y_frames_post.shape[-1]
             else:
@@ -154,8 +155,7 @@ def stft_lib(
     else:
         if n_fft > y.shape[-1]:
             raise ValueError(
-                f"n_fft={n_fft} is too large for uncentered analysis of input "
-                f"signal of length={y.shape[-1]}"
+                f"n_fft={n_fft} is too large for uncentered analysis of input " f"signal of length={y.shape[-1]}"
             )
 
         # "Middle" of the signal starts at sample 0
@@ -181,13 +181,9 @@ def stft_lib(
     if out is None:
         stft_matrix = np.zeros(shape, dtype=dtype, order="F")
     elif not (np.allclose(out.shape[:-1], shape[:-1]) and out.shape[-1] >= shape[-1]):
-        raise ValueError(
-            f"Shape mismatch for provided output array out.shape={out.shape} "
-            f"and target shape={shape}"
-        )
+        raise ValueError(f"Shape mismatch for provided output array out.shape={out.shape} " f"and target shape={shape}")
     elif not np.iscomplexobj(out):
-        raise ValueError(f"output with dtype={out.dtype} is not of complex "
-                         f"type")
+        raise ValueError(f"output with dtype={out.dtype} is not of complex " f"type")
     else:
         if np.allclose(shape, out.shape):
             stft_matrix = out
@@ -197,27 +193,21 @@ def stft_lib(
     # Fill in the warm-up
     if center and extra > 0:
         off_start = y_frames_pre.shape[-1]
-        stft_matrix[..., :off_start] = fft.rfft(fft_window * y_frames_pre,
-                                                axis=-2)
+        stft_matrix[..., :off_start] = fft.rfft(fft_window * y_frames_pre, axis=-2)
 
         off_end = y_frames_post.shape[-1]
         if off_end > 0:
-            stft_matrix[..., -off_end:] = fft.rfft(fft_window * y_frames_post,
-                                                   axis=-2)
+            stft_matrix[..., -off_end:] = fft.rfft(fft_window * y_frames_post, axis=-2)
     else:
         off_start = 0
 
-    n_columns = int(
-        MAX_MEM_BLOCK // (np.prod(y_frames.shape[:-1]) * y_frames.itemsize)
-    )
+    n_columns = int(MAX_MEM_BLOCK // (np.prod(y_frames.shape[:-1]) * y_frames.itemsize))
     n_columns = max(n_columns, 1)
 
     for bl_s in range(0, y_frames.shape[-1], n_columns):
         bl_t = min(bl_s + n_columns, y_frames.shape[-1])
 
-        stft_matrix[..., bl_s + off_start : bl_t + off_start] = fft.rfft(
-            fft_window * y_frames[..., bl_s:bl_t], axis=-2
-        )
+        stft_matrix[..., bl_s + off_start : bl_t + off_start] = fft.rfft(fft_window * y_frames[..., bl_s:bl_t], axis=-2)
     return stft_matrix
 
 
@@ -280,10 +270,7 @@ def istft_lib(
     if out is None:
         y = np.zeros(shape, dtype=dtype)
     elif not np.allclose(out.shape, shape):
-        raise ValueError(
-            f"Shape mismatch for provided output array "
-            f"out.shape={out.shape} != {shape}"
-        )
+        raise ValueError(f"Shape mismatch for provided output array " f"out.shape={out.shape} != {shape}")
     else:
         y = out
         # Since we'll be doing overlap-add here, this needs to be initialized to zero.
@@ -320,9 +307,7 @@ def istft_lib(
         start_frame = 0
         offset = 0
 
-    n_columns = int(
-        MAX_MEM_BLOCK // (np.prod(stft_matrix.shape[:-1]) * stft_matrix.itemsize)
-    )
+    n_columns = int(MAX_MEM_BLOCK // (np.prod(stft_matrix.shape[:-1]) * stft_matrix.itemsize))
     n_columns = max(n_columns, 1)
 
     frame = 0
@@ -362,18 +347,17 @@ def istft_lib(
 
 
 def spectrogram_lib(
-        *,
-        y: Optional[np.ndarray] = None,
-        S: Optional[np.ndarray] = None,
-        n_fft: Optional[int] = 2048,
-        hop_length: Optional[int] = 512,
-        power: float = 1,
-        win_length: Optional[int] = None,
-        window: _WindowSpec = "hann",
-        center: bool = True,
-        pad_mode: _PadModeSTFT = "constant",
+    *,
+    y: Optional[np.ndarray] = None,
+    S: Optional[np.ndarray] = None,
+    n_fft: Optional[int] = 2048,
+    hop_length: Optional[int] = 512,
+    power: float = 1,
+    win_length: Optional[int] = None,
+    window: _WindowSpec = "hann",
+    center: bool = True,
+    pad_mode: _PadModeSTFT = "constant",
 ) -> Tuple[np.ndarray, int]:
-
     if S is not None:
         # Infer n_fft from spectrogram shape, but only if it mismatches
         if n_fft is None or n_fft // 2 + 1 != S.shape[-2]:
@@ -381,38 +365,34 @@ def spectrogram_lib(
     else:
         # Otherwise, compute a magnitude spectrogram from input
         if n_fft is None:
-            raise ValueError(
-                f"Unable to compute spectrogram with n_fft={n_fft}")
+            raise ValueError(f"Unable to compute spectrogram with n_fft={n_fft}")
         if y is None:
-            raise ValueError(
-                "Input signal must be provided to compute a spectrogram"
-            )
+            raise ValueError("Input signal must be provided to compute a spectrogram")
         S = (
-                np.abs(
-                    stft_lib(
-                        y,
-                        n_fft=n_fft,
-                        hop_length=hop_length,
-                        win_length=win_length,
-                        center=center,
-                        window=window,
-                        pad_mode=pad_mode,
-                    )
+            np.abs(
+                stft_lib(
+                    y,
+                    n_fft=n_fft,
+                    hop_length=hop_length,
+                    win_length=win_length,
+                    center=center,
+                    window=window,
+                    pad_mode=pad_mode,
                 )
-                ** power
+            )
+            ** power
         )
 
     return S, n_fft
 
 
 def power_to_db_lib(
-        S: _ScalarOrSequence[_ComplexLike_co],
-        *,
-        ref: Union[float, Callable] = 1.0,
-        amin: float = 1e-10,
-        top_db: Optional[float] = 80.0,
+    S: _ScalarOrSequence[_ComplexLike_co],
+    *,
+    ref: Union[float, Callable] = 1.0,
+    amin: float = 1e-10,
+    top_db: Optional[float] = 80.0,
 ) -> np.ndarray:
-
     # The functionality in this implementation are basically derived from
     # librosa v0.10.1:
     # https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py

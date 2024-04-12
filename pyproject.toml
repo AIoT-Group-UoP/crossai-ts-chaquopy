@@ -37,6 +37,7 @@ soxr = "0.3.6"
 tqdm = "4.66.2"
 tsaug = "0.2.1"
 typing-extensions = "^4.8.0"
+numpy = "1.19.5"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.3.0"
