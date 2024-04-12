@@ -5,3 +5,4 @@ from ._resample import *
 from ._utility import *
 from ._utility import __overlap_add, get_window
 from ._typing_base import *
+from .numpy_typing import *

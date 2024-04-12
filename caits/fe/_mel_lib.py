@@ -3,15 +3,17 @@
 # https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
 import warnings
 from typing import Any, Optional, Union
+
 import numpy as np
 import scipy
-from numpy.typing import DTypeLike
 import scipy.fftpack
 import scipy.signal
 from typing_extensions import Literal
+
 from caits.base import expand_to, normalize
-from caits.fe._spectrum_lib import spectrogram_lib, power_to_db_lib
-from caits.base._typing_base import _WindowSpec, _PadModeSTFT, _ScalarOrSequence, _FloatLike_co
+from caits.base._typing_base import _FloatLike_co, _PadModeSTFT, _ScalarOrSequence, _WindowSpec
+from caits.base.numpy_typing import DTypeLike
+from caits.fe._spectrum_lib import power_to_db_lib, spectrogram_lib
 
 
 def mfcc_stats(
@@ -25,9 +27,7 @@ def mfcc_stats(
     export: str = "array",
     **kwargs: Any,
 ) -> Union[np.ndarray, dict]:
-
-    mfcc_arr = mfcc_lib(y=y, sr=sr, S=S, n_mfcc=n_mfcc, dct_type=dct_type,
-                        norm=norm, lifter=lifter, **kwargs)
+    mfcc_arr = mfcc_lib(y=y, sr=sr, S=S, n_mfcc=n_mfcc, dct_type=dct_type, norm=norm, lifter=lifter, **kwargs)
     delta_arr = delta_lib(mfcc_arr)
 
     mfcc_mean = np.mean(mfcc_arr, axis=1)
@@ -36,9 +36,7 @@ def mfcc_stats(
     delta2_mean = np.mean(delta_lib(mfcc_arr, order=2), axis=1)
 
     if export == "array":
-        return np.concatenate([mfcc_mean, mfcc_std, delta_mean,
-                               delta2_mean],
-                              axis=1)
+        return np.concatenate([mfcc_mean, mfcc_std, delta_mean, delta2_mean], axis=1)
     elif export == "dict":
         return {
             "mfcc_mean": mfcc_mean,
@@ -59,14 +57,10 @@ def delta_lib(
     mode: str = "interp",
     **kwargs: Any,
 ) -> np.ndarray:
-
     data = np.atleast_1d(data)
 
     if mode == "interp" and width > data.shape[axis]:
-        raise ValueError(
-            f"when mode='interp', width={width} "
-            f"cannot exceed data.shape[axis]={data.shape[axis]}"
-        )
+        raise ValueError(f"when mode='interp', width={width} " f"cannot exceed data.shape[axis]={data.shape[axis]}")
 
     if width < 3 or np.mod(width, 2) != 1:
         raise ValueError("width must be an odd integer >= 3")
@@ -76,9 +70,7 @@ def delta_lib(
 
     kwargs.pop("deriv", None)
     kwargs.setdefault("polyorder", order)
-    result: np.ndarray = scipy.signal.savgol_filter(
-        data, width, deriv=order, axis=axis, mode=mode, **kwargs
-    )
+    result: np.ndarray = scipy.signal.savgol_filter(data, width, deriv=order, axis=axis, mode=mode, **kwargs)
     return result
 
 
@@ -93,13 +85,11 @@ def mfcc_lib(
     **kwargs: Any,
 ) -> np.ndarray:
     if S is None:
-    # multichannel behavior may be different due to relative noise floor
-    # differences between channels
+        # multichannel behavior may be different due to relative noise floor
+        # differences between channels
         S = power_to_db_lib(melspectrogram_lib(y=y, sr=sr, **kwargs))
 
-    M: np.ndarray = scipy.fftpack.dct(S, axis=-2, type=dct_type, norm=norm)[
-        ..., :n_mfcc, :
-    ]
+    M: np.ndarray = scipy.fftpack.dct(S, axis=-2, type=dct_type, norm=norm)[..., :n_mfcc, :]
 
     if lifter > 0:
         # shape lifter for broadcasting
@@ -174,18 +164,18 @@ def filter_mel(
 
 
 def melspectrogram_lib(
-        *,
-        y: Optional[np.ndarray] = None,
-        sr: float = 22050,
-        S: Optional[np.ndarray] = None,
-        n_fft: int = 2048,
-        hop_length: int = 512,
-        win_length: Optional[int] = None,
-        window: _WindowSpec = "hann",
-        center: bool = True,
-        pad_mode: _PadModeSTFT = "constant",
-        power: float = 2.0,
-        **kwargs: Any,
+    *,
+    y: Optional[np.ndarray] = None,
+    sr: float = 22050,
+    S: Optional[np.ndarray] = None,
+    n_fft: int = 2048,
+    hop_length: int = 512,
+    win_length: Optional[int] = None,
+    window: _WindowSpec = "hann",
+    center: bool = True,
+    pad_mode: _PadModeSTFT = "constant",
+    power: float = 2.0,
+    **kwargs: Any,
 ) -> np.ndarray:
     S, n_fft = spectrogram_lib(
         y=y,
@@ -202,20 +192,15 @@ def melspectrogram_lib(
     # Build a Mel filter
     mel_basis = filter_mel(sr=sr, n_fft=n_fft, **kwargs)
 
-    melspec: np.ndarray = np.einsum("...ft,mf->...mt", S, mel_basis,
-                                    optimize=True)
+    melspec: np.ndarray = np.einsum("...ft,mf->...mt", S, mel_basis, optimize=True)
     return melspec
 
 
 def fft_frequencies(*, sr: float = 22050, n_fft: int = 2048) -> np.ndarray:
-
     return np.fft.rfftfreq(n=n_fft, d=1.0 / sr)
 
 
-def mel_frequencies(
-    n_mels: int = 128, *, fmin: float = 0.0, fmax: float = 11025.0, htk: bool = False
-) -> np.ndarray:
-
+def mel_frequencies(n_mels: int = 128, *, fmin: float = 0.0, fmax: float = 11025.0, htk: bool = False) -> np.ndarray:
     # 'Center freqs' of mel bands - uniformly spaced between limits
     min_mel = hz_to_mel(fmin, htk=htk)
     max_mel = hz_to_mel(fmax, htk=htk)
@@ -229,7 +214,6 @@ def mel_frequencies(
 def hz_to_mel(
     frequencies: _ScalarOrSequence[_FloatLike_co], *, htk: bool = False
 ) -> Union[np.floating[Any], np.ndarray]:
-
     frequencies = np.asanyarray(frequencies)
 
     if htk:
@@ -251,8 +235,7 @@ def hz_to_mel(
     if frequencies.ndim:
         # If we have array data, vectorize
         log_t = frequencies >= min_log_hz
-        mels[log_t] = min_log_mel + np.log(
-            frequencies[log_t] / min_log_hz) / logstep
+        mels[log_t] = min_log_mel + np.log(frequencies[log_t] / min_log_hz) / logstep
     elif frequencies >= min_log_hz:
         # If we have scalar data, heck directly
         mels = min_log_mel + np.log(frequencies / min_log_hz) / logstep
@@ -260,10 +243,7 @@ def hz_to_mel(
     return mels
 
 
-def mel_to_hz(
-    mels: _ScalarOrSequence[_FloatLike_co], *, htk: bool = False
-) -> np.ndarray:
-
+def mel_to_hz(mels: _ScalarOrSequence[_FloatLike_co], *, htk: bool = False) -> np.ndarray:
     mels = np.asanyarray(mels)
 
     if htk:
