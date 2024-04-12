@@ -7,7 +7,6 @@ setup(
         "caits",
         "caits.base",
         "caits.dataset",
-        "caits.loading",
         "caits.fe",
         "caits.fe.spec_properties",
         "caits.transformers",
@@ -24,14 +23,9 @@ setup(
         "pandas==2.2.0",
         "scipy==1.12.0",
         "scikit-learn==1.4.0",
-        "seaborn>=0.12.2",
-        "pydub==0.25.1",
-        "soundfile==0.12.1",
         "resampy==0.4.2",
         "samplerate==0.1.0; platform_system=='Linux'",
         "soxr==0.3.7",
-        "pyyaml==6.0.1",
-        "tqdm==4.66.2"
     ],
     python_requires=">=3.8"
 )

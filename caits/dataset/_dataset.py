@@ -1,5 +1,4 @@
 from typing import List
-
 import numpy as np
 from pandas import DataFrame
 from sklearn.model_selection import train_test_split as sklearn_tts
