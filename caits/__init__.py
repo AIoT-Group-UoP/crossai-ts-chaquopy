@@ -1,9 +1,10 @@
 """
-CrossAI-TS.
+CrossAI-TS - Chaquopy Version.
 
 An open-source library that consists of functionalities capable of processing
 and developing end-to-end Artificial Intelligence pipelines for Time Series
-Analysis.
+Analysis in Android applications. it supports integration into the Chaquopy
+Python SDK.
 """
 
 __version__ = "0.0.0.1"

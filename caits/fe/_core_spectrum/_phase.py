@@ -2,10 +2,9 @@
 # librosa v0.10.1:
 # https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
 # https://github.com/librosa/librosa/blob/main/librosa/util/utils.py
-
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union
 import numpy as np
-from ._typing_base import _Real, _Number
+from caits.core._core_typing import _Real, _Number
 
 
 def phase_vocoder(
@@ -35,7 +34,7 @@ def phase_vocoder(
     phase_acc = np.angle(D[..., 0])
 
     # Pad 0 columns to simplify boundary logic
-    padding: List[Tuple[int, int]] = [(0, 0) for _ in D.shape]
+    padding = [(0, 0) for _ in D.shape]
     padding[-1] = (0, 2)
     D = np.pad(D, padding, mode="constant")
 
@@ -71,7 +70,7 @@ def phasor(
     mag: Optional[Union[np.ndarray, _Number]] = None,
 ) -> Union[np.ndarray, np.complex_]:
 
-    z: Union[np.ndarray, np.complex_] = _phasor_angles(angles)
+    z = _phasor_angles(angles)
 
     if mag is not None:
         z *= mag
