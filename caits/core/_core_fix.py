@@ -1,13 +1,12 @@
 # The functionality in this implementation are basically derived from
 # librosa v0.10.1:
 # https://github.com/librosa/librosa/blob/main/librosa/util/utils.py
+from typing import Any
+
 import numpy as np
-from typing import Any, List, Tuple
 
 
-def fix_length(
-    data: np.ndarray, *, size: int, axis: int = -1, **kwargs: Any
-) -> np.ndarray:
+def fix_length(data: np.ndarray, *, size: int, axis: int = -1, **kwargs: Any) -> np.ndarray:
     kwargs.setdefault("mode", "constant")
 
     n = data.shape[axis]
@@ -18,9 +17,8 @@ def fix_length(
         return data[tuple(slices)]
 
     elif n < size:
-        lengths: List[Tuple[int, int]] = [(0, 0)] * data.ndim
+        lengths = [(0, 0)] * data.ndim
         lengths[axis] = (0, size - n)
         return np.pad(array=data, pad_width=lengths, **kwargs)
 
     return data
-

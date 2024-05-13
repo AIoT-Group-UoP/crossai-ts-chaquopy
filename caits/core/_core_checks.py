@@ -5,8 +5,7 @@
 from typing import Dict, Optional, Union
 
 import numpy as np
-
-from .numpy_typing import DTypeLike
+from numpy.typing import DTypeLike
 
 
 class Deprecated(object):
@@ -54,7 +53,7 @@ def valid_audio(y: np.ndarray, *, mono: Union[bool, Deprecated] = Deprecated()) 
     return True
 
 
-def dtype_r2c(d: np.dtype, *, default: Optional[type] = np.complex64) -> np.dtype:
+def dtype_r2c(d: DTypeLike, *, default: Optional[type] = np.complex64) -> DTypeLike:
     mapping: Dict[DTypeLike, type] = {
         np.dtype(np.float32): np.complex64,
         np.dtype(np.float64): np.complex128,
@@ -71,7 +70,7 @@ def dtype_r2c(d: np.dtype, *, default: Optional[type] = np.complex64) -> np.dtyp
     return np.dtype(mapping.get(dt, default))
 
 
-def dtype_c2r(d: np.dtype, *, default: Optional[type] = np.float32) -> np.dtype:
+def dtype_c2r(d: DTypeLike, *, default: Optional[type] = np.float32) -> DTypeLike:
     mapping: Dict[DTypeLike, type] = {
         np.dtype(np.complex64): np.float32,
         np.dtype(np.complex128): np.float64,

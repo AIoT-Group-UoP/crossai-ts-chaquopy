@@ -1,12 +1,13 @@
+from datetime import datetime
+from typing import Any, List, Optional, Union
+
+from joblib import dump
+from numpy import ndarray
+from pandas import DataFrame
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
-from joblib import dump
-from typing import Union
-from pandas import DataFrame
-from datetime import datetime
-from typing import Optional, List, Any
+
 from caits.dataset import Dataset
-from numpy import ndarray
 
 
 class ArrayToDataset(BaseEstimator, TransformerMixin):
@@ -96,11 +97,11 @@ class DatasetToArray(BaseEstimator, TransformerMixin):
                            representation of the DataFrames in the Dataset.
         """
         _X, _, _ = X.to_numpy()
-        
-        return _X.squeeze(axis=-1)
 
-def sklearn_to_pkl(
-        model: Union[BaseEstimator, Pipeline], filename: str) -> None:
+        return _X
+
+
+def sklearn_to_pkl(model: Union[BaseEstimator, Pipeline], filename: str) -> None:
     """Saves a scikit-learn model or pipeline to a .pkl file using joblib.
 
     This function uses the joblib library to serialize and save scikit-learn
@@ -142,12 +143,14 @@ def sklearn_to_pkl(
                     BaseEstimator or Pipeline.
     """
     if not isinstance(model, (BaseEstimator, Pipeline)):
-        raise ValueError("The model must be a scikit-learn \
-                         BaseEstimator or Pipeline instance.")
+        raise ValueError(
+            "The model must be a scikit-learn \
+                         BaseEstimator or Pipeline instance."
+        )
 
     # Ensure the filename ends with '.pkl'
-    if not filename.endswith('.pkl'):
-        filename += '.pkl'
+    if not filename.endswith(".pkl"):
+        filename += ".pkl"
 
     # Save the model to the specified file
     dump(model, filename)

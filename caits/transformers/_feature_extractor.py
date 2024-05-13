@@ -1,7 +1,10 @@
-from sklearn.base import BaseEstimator, TransformerMixin
+from collections import defaultdict
+from typing import Dict, List
+
 import numpy as np
 from pandas import DataFrame
-from typing import Any, List, Dict
+from sklearn.base import BaseEstimator, TransformerMixin
+
 from caits.dataset import Dataset
 
 
@@ -14,11 +17,9 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 
     def transform(self, X: Dataset) -> Dataset:
         transformed_X = []
-        transformed_y = X.y
-        transformed_id = X._id
 
         for df in X.X:
-            features_dict: Dict[str, Any] = {}
+            features_dict = defaultdict(lambda: [])
 
             for col_name, col_data in df.items():
                 for extractor in self.feature_extractors:
@@ -26,26 +27,25 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
                     params = extractor.get("params", {})
                     feature = func(col_data.values.flatten(), **params)
 
-                    # Populate features_dict with feature names as
-                    # keys and column names with values as lists
+                    # Flatten 2D arrays with a single column
+                    column_vector_cond = feature.ndim == 2 and feature.shape[1] == 1
+                    if column_vector_cond:
+                        feature = feature.ravel()
+
+                    # Handle all features, including scalars, 1D, and 2D arrays
                     if np.isscalar(feature) or feature.ndim == 0:
-                        features_dict.setdefault(func.__name__, []).append(feature)
-                    elif feature.ndim == 1:
+                        # For scalars or 0D arrays
+                        features_dict[func.__name__].append(feature)
+                    elif feature.ndim == 1 or column_vector_cond:
+                        # For 1D arrays or flattened 2D arrays
                         for i, val in enumerate(feature):
-                            features_dict.setdefault(f"{func.__name__}_{i}", []).append(val)
-                    elif feature.ndim == 2 and feature.shape[1] == 1:
-                        feature = feature.ravel()  # Flatten (n, 1) arrays
-                        for i, val in enumerate(feature):
-                            features_dict.setdefault(f"{func.__name__}_{i}", []).append(val)
+                            features_dict[f"{func.__name__}_{i}"].append(val)
                     else:
                         raise ValueError("Unexpected feature shape.")
 
             # Convert the features_dict to a DataFrame,
             # with channels as columns and features as rows
-            features_df = DataFrame(
-                features_dict,
-                index=[col_name for col_name in df.keys()]
-            ).T
+            features_df = DataFrame(features_dict, index=[col_name for col_name in df.keys()]).T
             transformed_X.append(features_df)
 
-        return Dataset(transformed_X, transformed_y, transformed_id)
+        return Dataset(transformed_X, X.y, X._id)
