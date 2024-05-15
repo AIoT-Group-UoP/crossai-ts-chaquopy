@@ -2,8 +2,9 @@
 
 ## Introduction
 
-This is a version of the CrossAI-TS Python library that provides capable of
-running on Android devices using the Chaquopy SDK.
+This is a version of the CrossAI-TS Python library that provides 
+functionalities capable of running all the data processing functionalities that
+CrossAI-TS integrates, however, on Android devices using the Chaquopy SDK.
 
 ## Installation
 

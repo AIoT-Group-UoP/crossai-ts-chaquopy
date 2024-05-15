@@ -8,17 +8,17 @@ setup(
         "caits.base",
         "caits.dataset",
         "caits.fe",
-        "caits.fe.spec_properties",
+        "caits.fe.core_spectrum",
         "caits.transformers",
-        "caits.performance",
-        "caits.resources_handling"
+        "caits.performance"
     ],
     url="https://github.com/AIoT-Group-UoP/crossai-ts-chaquopy",
     license="Apache License 2.0",
     author="Pantelis Tzamalis, George Kontogiannis",
     author_email="tzamalis@ceid.upatras.gr",
     description="An open-source Python library for developing "
-                "end-to-end AI pipelines for Time Series Analysis",
+                "end-to-end AI pipelines for Time Series Analysis on "
+                "Android devices using the Chaquopy SDK.",
     install_requires=[
         "pandas==2.2.0",
         "scipy==1.12.0",
