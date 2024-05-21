@@ -8,10 +8,37 @@
   "terminal.integrated.fontFamily": "JetBrainsMono Nerd Font",
   "workbench.colorTheme": "One Dark Vivid",
   "workbench.iconTheme": "a-file-icon-vscode",
+  "editor.defaultFormatter": "charliermarsh.ruff",
   "[python]": {
-    "editor.defaultFormatter": "charliermarsh.ruff"
+    "editor.formatOnSave": true,
+    "editor.formatOnType": true,
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "explicit"
+    }
+  },
+  "ruff.lint.args": [
+    "--config=pyproject.toml"
+  ],
+  "ruff.organizeImports": true,
+  "ruff.fixAll": true,
+  "emeraldwalk.runonsave": {
+    "commands": [
+      {
+        "cmd": "poetry run ruff check --fix --config=pyproject.toml",
+        "match": "\\.py$",
+        "isAsync": true,
+      }
+    ]
   },
   "mypy-type-checker.importStrategy": "fromEnvironment",
-  "editor.formatOnSave": true,
-  "editor.formatOnType": true
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "python.analysis.indexing": true,
+  "python.analysis.autoImportCompletions": true,
+  "mypy-type-checker.preferDaemon": true,
+  "python.analysis.autoFormatStrings": true,
+  "python.analysis.inlayHints.callArgumentNames": "all",
+  "python.analysis.inlayHints.functionReturnTypes": true,
+  "python.analysis.inlayHints.pytestParameters": true,
+  "python.analysis.inlayHints.variableTypes": true,
+  "python.analysis.diagnosticMode": "workspace"
 }

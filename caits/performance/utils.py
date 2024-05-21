@@ -1,57 +1,18 @@
-from typing import Any, Optional, Union, List
+from typing import Any, Optional, Union
 
 import numpy as np
 from scipy.interpolate import interp1d
-from sklearn.base import BaseEstimator
-from tensorflow.keras import Model
 
 TensorLike = Union[np.ndarray, Any]
 
 
-def generate_pred_probas(model: Union[BaseEstimator, Model], X: TensorLike, repeats: int = 1) -> np.ndarray:
-    """Executes inference using a TensorFlow or scikit-learn model on provided
-    data, optionally repeating the process multiple times. This function is
-    designed to accommodate models with different prediction interfaces,
-    attempting to use `predict_proba` for probabilistic outcomes and falling
-    back to `predict` for direct predictions if the former is not available.
-
-    Args:
-        model: The machine learning model to be used for predictions. This can
-               be either a TensorFlow model or a scikit-learn model. The
-               function attempts to use `predict_proba` for probabilistic
-               outcomes first; if not available, it falls back to `predict`
-               for direct predictions.
-        X: The dataset on which predictions are to be made. Expected to be
-              formatted appropriately for the model's input requirements.
-        repeats: The number of times the prediction process should be repeated.
-                 This is useful for assessing model consistency and uncertainty
-                 in predictions.
-
-    Returns:
-        An array of predictions made by the model. For repeated predictions,
-        the results are stacked along a new dimension, allowing for further
-        analysis of prediction consistency or uncertainty.
-    """
-    if hasattr(model, "predict_proba"):
-        # Attempt to use predict_proba for probabilistic outcomes
-        predictions = [model.predict_proba(X) for s in range(repeats)]
-    else:
-        # Fallback to using predict for direct predictions
-        predictions = [model.predict(X, verbose=0) for s in range(repeats)]
-
-    # Stack predictions along a new dimension for repeated predictions
-    all_predictions = np.stack(predictions, axis=0)
-
-    return all_predictions
-
-
 def interpolate_probas(
-    probabilities: np.ndarray,
-    sampling_rate: int,
-    Ws: float,
-    n_points: Optional[int] = None,
-    kind: Optional[str] = "cubic",
-    clamp: Optional[bool] = True,
+        probabilities: np.ndarray,
+        sampling_rate: int,
+        Ws: float,
+        n_points: int = None,
+        kind: Optional[str] = "cubic",
+        clamp: Optional[bool] = True
 ) -> np.ndarray:
     """Interpolates prediction probabilities for a smoother representation
     over time or samples.
@@ -99,7 +60,8 @@ def interpolate_probas(
     # Perform cubic interpolation for each class
     for i in range(n_classes):
         # Create the interpolator function for the current class
-        interpolator = interp1d(x_original, probabilities[:, i], kind=kind, fill_value="extrapolate")
+        interpolator = interp1d(x_original, probabilities[:, i],
+                                kind=kind, fill_value='extrapolate')
 
         # Apply interpolation and store the results
         interpolated_probs = interpolator(x_interpolated)
@@ -114,7 +76,11 @@ def interpolate_probas(
     return interpolated_probabilities
 
 
-def get_gt_events_from_dict(events: dict, class_names: List[str], sr: Optional[int] = None) -> dict:
+def get_gt_events_from_dict(
+        events: dict,
+        class_names: list[str],
+        sr: int = None
+) -> dict:
     """Extracts and optionally converts start and end intervals from a given
     JSON structure to samples. The output is a dictionary keyed by the original
     keys from `events`, with values being lists of tuples. Each tuple
@@ -135,11 +101,9 @@ def get_gt_events_from_dict(events: dict, class_names: List[str], sr: Optional[i
             (
                 int(item["start"] * sr) if item.get("type") == "time" else item["start"],
                 int(item["end"] * sr) if item.get("type") == "time" else item["end"],
-                list(class_names).index(item["label"]),
-            )
-            for item in items
-        ]
-        for key, items in events.items()
+                list(class_names).index(item["label"])
+            ) for item in items
+        ] for key, items in events.items()
     }
 
     return intervals

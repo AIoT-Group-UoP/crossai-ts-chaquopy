@@ -1,11 +1,11 @@
-from typing import List, Optional, Union
+from typing import List, Union
 
 import numpy as np
 from scipy.ndimage import gaussian_filter, median_filter
 from scipy.signal import butter, filtfilt, medfilt, sosfilt, sosfilt_zi, sosfiltfilt
 
 
-def filter_median_simple(array: np.ndarray, kernel_size: Optional[int] = None) -> np.ndarray:
+def filter_median_simple(array: np.ndarray, kernel_size: int = None) -> np.ndarray:
     """Performs a median filter on an N-dimensional array.
 
     Args:
@@ -58,7 +58,7 @@ def filter_butterworth(
     array: np.ndarray,
     fs: float,
     filter_type: str = "lowpass",
-    cutoff_freq: Optional[Union[float, tuple]] = None,
+    cutoff_freq: Union[float, tuple] = None,
     order: int = 5,
     analog: bool = False,
     method: str = "filtfilt",

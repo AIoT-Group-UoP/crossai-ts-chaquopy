@@ -1,11 +1,16 @@
-from typing import Any, Callable, Optional, Tuple, Union
+# The functionalities in this implementation are basically derived from
+# librosa v0.10.1:
+# https://github.com/librosa/librosa/blob/main/librosa/util/utils.py
+# https://github.com/librosa/librosa/blob/main/librosa/filters.py
+# https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import scipy
 from numpy.lib.stride_tricks import as_strided
 from numpy.typing import ArrayLike, DTypeLike
 
-from caits.core._core_typing import _FloatLike_co, _WindowSpec
+from ._typing_base import _FloatLike_co, _WindowSpec
 
 
 def frame(
@@ -48,49 +53,6 @@ def frame(
     return xw[tuple(slices)]
 
 
-def window_sumsquare(
-    *,
-    window: _WindowSpec,
-    n_frames: int,
-    hop_length: int = 512,
-    win_length: Optional[int] = None,
-    n_fft: int = 2048,
-    dtype: DTypeLike = np.float32,
-    norm: Optional[float] = None,
-) -> np.ndarray:
-    if win_length is None:
-        win_length = n_fft
-
-    n = n_fft + hop_length * (n_frames - 1)
-    x = np.zeros(n, dtype=dtype)
-
-    # Compute the squared window at the desired length
-    win_sq = get_window(window, win_length)
-    win_sq = normalize(win_sq, norm=norm) ** 2
-    win_sq = pad_center(win_sq, size=n_fft)
-
-    # Fill the envelope
-    __window_ss_fill(x, win_sq, n_frames, hop_length)
-
-    return x
-
-
-def pad_center(data: np.ndarray, *, size: int, axis: int = -1, **kwargs: Any) -> np.ndarray:
-    kwargs.setdefault("mode", "constant")
-
-    n = data.shape[axis]
-
-    lpad = int((size - n) // 2)
-
-    lengths = [(0, 0)] * data.ndim
-    lengths[axis] = (lpad, int(size - n - lpad))
-
-    if lpad < 0:
-        raise ValueError(f"Target size ({size:d}) must be at least input size ({n:d})")
-
-    return np.pad(data, lengths, **kwargs)
-
-
 def get_window(
     window: Union[str, Tuple[Any, ...], float, Callable[[int], np.ndarray], ArrayLike],
     Nx: int,
@@ -113,13 +75,41 @@ def get_window(
         raise ValueError(f"Invalid window specification: {window!r}")
 
 
-def __window_ss_fill(x, win_sq, n_frames, hop_length):  # pragma: no cover
-    """Computes the sum-square envelope of a window."""
-    n = len(x)
-    n_fft = len(win_sq)
-    for i in range(n_frames):
-        sample = i * hop_length
-        x[sample : min(n, sample + n_fft)] += win_sq[: max(0, min(n_fft, n - sample))]
+def pad_center(data: np.ndarray, *, size: int, axis: int = -1, **kwargs: Any) -> np.ndarray:
+    kwargs.setdefault("mode", "constant")
+
+    n = data.shape[axis]
+
+    lpad = int((size - n) // 2)
+
+    lengths = [(0, 0)] * data.ndim
+    lengths[axis] = (lpad, int(size - n - lpad))
+
+    if lpad < 0:
+        raise ValueError(f"Target size ({size:d}) must be at least input size ({n:d})")
+
+    return np.pad(data, lengths, **kwargs)
+
+
+def expand_to(x: np.ndarray, *, ndim: int, axes: Union[int, slice, Sequence[int], Sequence[slice]]) -> np.ndarray:
+    # Force axes into a tuple
+    axes_tup: Tuple[int]
+    try:
+        axes_tup = tuple(axes)  # type: ignore
+    except TypeError:
+        axes_tup = tuple([axes])  # type: ignore
+
+    if len(axes_tup) != x.ndim:
+        raise ValueError(f"Shape mismatch between axes={axes_tup} and input " f"x.shape={x.shape}")
+
+    if ndim < x.ndim:
+        raise ValueError(f"Cannot expand x.shape={x.shape} to fewer dimensions ndim={ndim}")
+
+    shape: List[int] = [1] * ndim
+    for i, axi in enumerate(axes_tup):
+        shape[axi] = x.shape[i]
+
+    return x.reshape(shape)
 
 
 def normalize(
@@ -211,3 +201,55 @@ def tiny(x: Union[float, np.ndarray]) -> _FloatLike_co:
         dtype = np.dtype(np.float32)
 
     return np.finfo(dtype).tiny
+
+
+def window_sumsquare(
+    *,
+    window: _WindowSpec,
+    n_frames: int,
+    hop_length: int = 512,
+    win_length: Optional[int] = None,
+    n_fft: int = 2048,
+    dtype: DTypeLike = np.float32,
+    norm: Optional[float] = None,
+) -> np.ndarray:
+    if win_length is None:
+        win_length = n_fft
+
+    n = n_fft + hop_length * (n_frames - 1)
+    x = np.zeros(n, dtype=dtype)
+
+    # Compute the squared window at the desired length
+    win_sq = get_window(window, win_length)
+    win_sq = normalize(win_sq, norm=norm) ** 2
+    win_sq = pad_center(win_sq, size=n_fft)
+
+    # Fill the envelope
+    __window_ss_fill(x, win_sq, n_frames, hop_length)
+
+    return x
+
+
+def __window_ss_fill(x, win_sq, n_frames, hop_length):  # pragma: no cover
+    """Compute the sum-square envelope of a window."""
+    n = len(x)
+    n_fft = len(win_sq)
+    for i in range(n_frames):
+        sample = i * hop_length
+        x[sample : min(n, sample + n_fft)] += win_sq[: max(0, min(n_fft, n - sample))]
+
+
+def __overlap_add(y, ytmp, hop_length):
+    # numba-accelerated overlap add for inverse stft
+    # y is the pre-allocated output buffer
+    # ytmp is the windowed inverse-stft frames
+    # hop_length is the hop-length of the STFT analysis
+
+    n_fft = ytmp.shape[-2]
+    N = n_fft
+    for frame in range(ytmp.shape[-1]):
+        sample = frame * hop_length
+        if N > y.shape[-1] - sample:
+            N = y.shape[-1] - sample
+
+        y[..., sample : (sample + N)] += ytmp[..., :N, frame]

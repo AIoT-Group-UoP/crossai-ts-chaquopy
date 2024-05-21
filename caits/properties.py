@@ -1,31 +1,25 @@
-from typing import Optional
-
 import numpy as np
 from scipy.signal import hilbert
 
 
-def amplitude_envelope_hbt(signal: np.ndarray, N: Optional[int] = None, axis: Optional[int] = -1) -> np.ndarray:
+def amplitude_envelope_hbt(signal: np.ndarray) -> np.ndarray:
     """Calculates the envelope of a signal by computing first the analytic
     signal using the Hilbert transform.
 
     Args:
         signal: The input signal as a numpy.ndarray.
-        N: Number of Fourier components. Default: signal.shape[axis]
-        axis: Axis along which to do the transformation. Default: -1.
 
     Returns:
         numpy.ndarray: The envelope of the input signal.
     """
-    analytic_signal = hilbert(x=signal, N=N, axis=axis)
+    analytic_signal = hilbert(signal)
     ae = np.abs(analytic_signal)
     return ae
 
 
 def instantaneous_frequency_hbt(
-    signal: np.ndarray,
-    fs: int,
-    N: Optional[int] = None,
-    axis: Optional[int] = -1,
+        signal: np.ndarray,
+        fs: int
 ) -> np.ndarray:
     """Calculates the instantaneous frequency of a signal by computing first
     the analytic signal using the Hilbert transform.
@@ -33,24 +27,37 @@ def instantaneous_frequency_hbt(
     Args:
         signal: The input signal as a numpy.ndarray.
         fs: The sampling frequency of the input signal.
-        N: Number of Fourier components. Default: signal.shape[axis]
-        axis: Axis along which to do the transformation. Default: -1.
 
     Returns:
         numpy.ndarray: The instantaneous frequency of the input signal.
     """
-    analytic_signal = hilbert(x=signal, N=N, axis=axis)
+    analytic_signal = hilbert(signal)
     instantaneous_phase = np.unwrap(np.angle(analytic_signal))
-    instant_freq = np.diff(instantaneous_phase) / (2.0 * np.pi) * fs
+    instant_freq = (np.diff(instantaneous_phase) / (2.0 * np.pi) * fs)
 
     return instant_freq
 
 
+def instantaneous_amplitude_hbt(signal: np.ndarray) -> np.ndarray:
+    """Calculates the instantaneous amplitude of a signal by computing first
+    the analytic signal using the Hilbert transform.
+
+    Args:
+        signal: The input signal as a numpy.ndarray.
+
+    Returns:
+        numpy.ndarray: The instantaneous amplitude of the input signal.
+    """
+    analytic_signal = hilbert(signal)
+    ia = np.abs(analytic_signal)
+    return ia
+
+
 def rolling_rms(
-    signal: np.ndarray,
-    frame_length: float,
-    hop_length: float,
-    padding_mode: str = "constant",
+        signal: np.ndarray,
+        frame_length: float,
+        hop_length: float,
+        padding_mode: str = "constant"
 ) -> np.ndarray:
     """Calculates the rolling Root Mean Square (RMS) of a signal in
     time-domain.
@@ -79,7 +86,7 @@ def rolling_rms(
 
     # Calculate RMS for each frame
     for i in range(num_frames):
-        frame = padded_signal[i * hop_length : i * hop_length + frame_length]
+        frame = padded_signal[i * hop_length:i * hop_length + frame_length]
         rms_values[i] = np.sqrt(np.mean(frame**2))
 
     return rms_values
@@ -114,7 +121,11 @@ def magnitude_signal(signal: np.ndarray) -> np.ndarray:
 
 
 def rolling_zcr(
-    array: np.ndarray, frame_length: int = 2048, hop_length: int = 512, center: bool = True, padding_mode: str = "edge"
+        array: np.ndarray,
+        frame_length: int = 2048,
+        hop_length: int = 512,
+        center: bool = True,
+        padding_mode: str = "edge"
 ) -> np.ndarray:
     """Calculates the rolling Zero Crossing Rate (ZCR) of a signal in
     time-domain. Implementation based on:
@@ -151,7 +162,11 @@ def rolling_zcr(
     return zcr
 
 
-def frame_signal(array: np.ndarray, frame_length: int, hop_length: int) -> np.ndarray:
+def frame_signal(
+        array: np.ndarray,
+        frame_length: int,
+        hop_length: int
+) -> np.ndarray:
     """Distinguishes a signal into overlapping frames.
 
     Args:

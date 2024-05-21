@@ -1,608 +1,223 @@
-# The functionalities in this implementation are basically derived from
-# librosa v0.10.1:
-# https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
-import warnings
-from typing import Any, Callable, Optional, Tuple, Union
+from typing import Optional, Tuple
 
 import numpy as np
 import scipy
-from numpy import fft
-from numpy.typing import ArrayLike, DTypeLike
+from scipy.signal import stft
 
-from caits.core._core_checks import dtype_c2r, dtype_r2c, is_positive_int, valid_audio
-from caits.core._core_fix import fix_length
-from caits.core._core_typing import _ComplexLike_co, _PadModeSTFT, _ScalarOrSequence, _WindowSpec
-from caits.core._core_window import frame, get_window, pad_center, tiny, window_sumsquare
-
-from .core_spectrum import __overlap_add, expand_to
-from .core_spectrum._utils import mel_filter
-
-# Constrain STFT block sizes to 256 KB
-MAX_MEM_BLOCK = 2**8 * 2**10
+from caits.base import get_window
 
 
-def stft(
-    y: np.ndarray,
-    *,
-    n_fft: int = 2048,
-    hop_length: Optional[int] = None,
-    win_length: Optional[int] = None,
-    window: Union[str, Tuple[Any, ...], float, Callable[[int], np.ndarray], ArrayLike] = "hann",
-    center: bool = True,
-    dtype: Optional[DTypeLike] = None,
-    pad_mode: Union[str, Callable[..., Any]] = "constant",
-    out: Optional[np.ndarray] = None,
-) -> np.ndarray:
-    """
+def pre(array: np.ndarray, fs: int) -> float:
+    """Computes the Phase Power Ratio Estimation
 
     Args:
-        y:
-        n_fft:
-        hop_length:
-        win_length:
-        window:
-        center:
-        dtype:
-        pad_mode: Could be something of the following in case of using a string
-            value: "constant", "edge", "linear_ramp", "reflect", "symmetric",
-            "empty".
-        out:
+        array: np.ndarray of shape (n_samples,) with the input signal.
+        fs: The sampling frequency of the signal.
 
     Returns:
-
+        float: The Phase Power Ratio Estimation of the input signal.
     """
-    # The functionality in this implementation are basically derived from
-    # librosa v0.10.1:
-    # https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
+    phaseLen = int(array.shape[0] // 3)
+    P1 = array[:phaseLen]
+    P2 = array[phaseLen : 2 * phaseLen]
+    # P3 = array[2*phaseLen:]
+    # f = np.fft.fftfreq(phaseLen, 1/fs)
+    P1 = np.abs(np.fft.fft(P1)[:phaseLen])
+    P2 = np.abs(np.fft.fft(P2)[:phaseLen])
+    # P3 = np.abs(np.fft.fft(P3)[:phaseLen])
+    P2norm = P2 / (np.sum(P1) + 1e-17)
+    fBin = fs / (2 * phaseLen + 1e-17)
+    f750, f1k, f2k5 = (int(-(-750 // fBin)), int(-(-1000 // fBin)), int(-(-2500 // fBin)))
+
+    return np.sum(P2norm[f1k:f2k5]) / np.sum(P2norm[:f750])
+
+
+def compute_spectrogram(
+    signal: np.ndarray,
+    fs: int,
+    window: str = "hann",
+    nperseg: int = 256,
+    noverlap: Optional[int] = None,
+    nfft: Optional[int] = None,
+    fmin: Optional[float] = None,
+    fmax: Optional[float] = None,
+):
+    """Computes the spectrogram of a signal.
+
+    Args:
+        signal: The input signal in np.ndarray.
+        fs: Integer with the sampling frequency of the signal in float.
+        window: String value containing the desired window to use.
+            Default is 'hann'.
+        nperseg: Integer with the length of each segment. Defaults to 256.
+        noverlap: Integer with the number of points to overlap between
+            segments. If None, `nperseg // 2` is used.
+        nfft: Integer with the length of the FFT used, if a zero-padded FFT is
+            desired. If None, it defaults to `nperseg`.
+        fmin: Float with the lowest frequency to include in the spectrogram
+            (in Hz). If None, it defaults to 0.
+        fmax: Float with the highest frequency to include in the spectrogram
+            (in Hz).  If None, it defaults to `fs / 2.0`.
+
+    Returns:
+        f: np.ndarray of sample frequencies.
+        t: np.ndarray of segment times.
+        spec: 2D np.ndarray Spectrogram of the `signal`.
+    """
+    if fmin is None:
+        fmin = 0
+    if fmax is None:
+        fmax = fs / 2.0
+
+    f, t, spec = stft(signal, fs=fs, window=window, nperseg=nperseg, noverlap=noverlap, nfft=nfft, boundary=None)
+    freq_mask = (f >= fmin) & (f <= fmax)
+    return f[freq_mask], t, np.abs(spec[freq_mask, :])
+
+
+def compute_power_spectrogram(
+    signal: np.ndarray,
+    fs: int,
+    window: str = "hann",
+    nperseg: int = 256,
+    noverlap: Optional[int] = None,
+    nfft: Optional[int] = None,
+    fmin: Optional[float] = None,
+    fmax: Optional[float] = None,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Computes the power spectrogram of a signal.
+
+    Args:
+        signal: np.ndarray of shape (n_samples,) with the input signal.
+        fs: The sampling frequency of the signal as integer.
+        window: String value containing the desired window to use. Default
+            is 'hann'.
+        nperseg: Integer with the length of each segment. Defaults to 256.
+        noverlap: Integer with the number of points to overlap between If
+            None, `nperseg // 2` is used.
+        nfft: Integer with the length of the FFT used, if a zero-padded FFT is
+            desired. If None, it defaults to `nperseg`.
+        fmin: Float with the lowest frequency to include in the spectrogram
+            (in Hz). If None, it defaults to 0.
+        fmax: Float with the highest frequency to include in the spectrogram
+            (in Hz).  If None, it defaults to `fs / 2.0`.
+
+    Returns:
+        f: np.ndarray of sample frequencies.
+        t: np.ndarray of segment times.
+        Pxx: np.ndarray of the power spectrogram of the signal.
+    """
+    if fmin is None:
+        fmin = 0
+    if fmax is None:
+        fmax = fs / 2.0
+
+    f, t, Zxx = stft(signal, fs=fs, window=window, nperseg=nperseg, noverlap=noverlap, nfft=nfft)
+    freq_mask = (f >= fmin) & (f <= fmax)
+    f = f[freq_mask]
+    spec = np.abs(Zxx[freq_mask, :])
+    Pxx = np.abs(spec) ** 2
+    return f, t, Pxx
+
 
-    # By default, use the entire frame
-    if win_length is None:
-        win_length = n_fft
-
-    # Set the default hop, if it's not already specified
-    if hop_length is None:
-        hop_length = int(win_length // 4)
-    elif not is_positive_int(hop_length):
-        raise ValueError(f"hop_length={hop_length} must be a positive integer")
-
-    # Check audio is valid
-    valid_audio(y, mono=False)
-
-    fft_window = get_window(window, win_length, fftbins=True)
-
-    # Pad the window out to n_fft size
-    fft_window = pad_center(fft_window, size=n_fft)
-
-    # Reshape so that the window can be broadcast
-    fft_window = expand_to(fft_window, ndim=1 + y.ndim, axes=-2)
-
-    # Pad the time series so that frames are centered
-    if center:
-        if pad_mode in ("wrap", "maximum", "mean", "median", "minimum"):
-            # Note: padding with a user-provided function "works", but
-            # use at your own risk.
-            # Since we don't pass-through kwargs here, any arguments
-            # to a user-provided pad function should be encapsulated
-            # by using functools.partial:
-            #
-            # >>> my_pad_func = functools.partial(pad_func, foo=x, bar=y)
-            # >>> librosa.stft(..., pad_mode=my_pad_func)
-
-            raise ValueError(f"pad_mode='{pad_mode}' is not supported by librosa.stft")
-
-        if n_fft > y.shape[-1]:
-            warnings.warn(f"n_fft={n_fft} is too large for input signal of length={y.shape[-1]}")
-
-        # Set up the padding array to be empty, and we'll fix the target dimension later
-        padding = [(0, 0) for _ in range(y.ndim)]
-
-        # How many frames depend on left padding?
-        start_k = int(np.ceil(n_fft // 2 / hop_length))
-
-        # What's the first frame that depends on extra right-padding?
-        tail_k = (y.shape[-1] + n_fft // 2 - n_fft) // hop_length + 1
-
-        if tail_k <= start_k:
-            # If tail and head overlap, then just copy-pad the signal and carry on
-            start = 0
-            extra = 0
-            padding[-1] = (n_fft // 2, n_fft // 2)
-            y = np.pad(y, padding, mode=pad_mode)
-        else:
-            # If tail and head do not overlap, then we can implement padding on each part separately
-            # and avoid a full copy-pad
-
-            # "Middle" of the signal starts here, and does not depend on head padding
-            start = start_k * hop_length - n_fft // 2
-            padding[-1] = (n_fft // 2, 0)
-
-            # +1 here is to ensure enough samples to fill the window
-            # fixes bug #1567
-            y_pre = np.pad(
-                y[..., : (start_k - 1) * hop_length - n_fft // 2 + n_fft + 1],
-                padding,
-                mode=pad_mode,
-            )
-            y_frames_pre = frame(y_pre, frame_length=n_fft, hop_length=hop_length)
-            # Trim this down to the exact number of frames we should have
-            y_frames_pre = y_frames_pre[..., :start_k]
-
-            # How many extra frames do we have from the head?
-            extra = y_frames_pre.shape[-1]
-
-            # Determine if we have any frames that will fit inside the tail pad
-            if tail_k * hop_length - n_fft // 2 + n_fft <= y.shape[-1] + n_fft // 2:
-                padding[-1] = (0, n_fft // 2)
-                y_post = np.pad(y[..., (tail_k) * hop_length - n_fft // 2 :], padding, mode=pad_mode)
-                y_frames_post = frame(y_post, frame_length=n_fft, hop_length=hop_length)
-                # How many extra frames do we have from the tail?
-                extra += y_frames_post.shape[-1]
-            else:
-                # In this event, the first frame that touches tail padding would run off
-                # the end of the padded array
-                # We'll circumvent this by allocating an empty frame buffer for the tail
-                # this keeps the subsequent logic simple
-                post_shape = list(y_frames_pre.shape)
-                post_shape[-1] = 0
-                y_frames_post = np.empty_like(y_frames_pre, shape=post_shape)
-    else:
-        if n_fft > y.shape[-1]:
-            raise ValueError(
-                f"n_fft={n_fft} is too large for uncentered analysis of input " f"signal of length={y.shape[-1]}"
-            )
-
-        # "Middle" of the signal starts at sample 0
-        start = 0
-        # We have no extra frames
-        extra = 0
-
-    if dtype is None:
-        dtype = dtype_r2c(y.dtype)
-
-    # Window the time series.
-    y_frames = frame(y[..., start:], frame_length=n_fft, hop_length=hop_length)
-
-    # Pre-allocate the STFT matrix
-    shape = list(y_frames.shape)
-
-    # This is our frequency dimension
-    shape[-2] = 1 + n_fft // 2
-
-    # If there's padding, there will be extra head and tail frames
-    shape[-1] += extra
-
-    if out is None:
-        stft_matrix = np.zeros(shape, dtype=dtype, order="F")
-    elif not (np.allclose(out.shape[:-1], shape[:-1]) and out.shape[-1] >= shape[-1]):
-        raise ValueError(f"Shape mismatch for provided output array out.shape={out.shape} " f"and target shape={shape}")
-    elif not np.iscomplexobj(out):
-        raise ValueError(f"output with dtype={out.dtype} is not of complex " f"type")
-    else:
-        if np.allclose(shape, out.shape):
-            stft_matrix = out
-        else:
-            stft_matrix = out[..., : shape[-1]]
-
-    # Fill in the warm-up
-    if center and extra > 0:
-        off_start = y_frames_pre.shape[-1]
-        stft_matrix[..., :off_start] = fft.rfft(fft_window * y_frames_pre, axis=-2)
-
-        off_end = y_frames_post.shape[-1]
-        if off_end > 0:
-            stft_matrix[..., -off_end:] = fft.rfft(fft_window * y_frames_post, axis=-2)
-    else:
-        off_start = 0
-
-    n_columns = int(MAX_MEM_BLOCK // (np.prod(y_frames.shape[:-1]) * y_frames.itemsize))
-    n_columns = max(n_columns, 1)
-
-    for bl_s in range(0, y_frames.shape[-1], n_columns):
-        bl_t = min(bl_s + n_columns, y_frames.shape[-1])
-
-        stft_matrix[..., bl_s + off_start : bl_t + off_start] = fft.rfft(fft_window * y_frames[..., bl_s:bl_t], axis=-2)
-    return stft_matrix
-
-
-def istft(
-    stft_matrix: np.ndarray,
-    *,
-    hop_length: Optional[int] = None,
-    win_length: Optional[int] = None,
-    n_fft: Optional[int] = None,
-    window: Union[str, Tuple[Any, ...], float, Callable[[int], np.ndarray], ArrayLike] = "hann",
-    center: bool = True,
-    dtype: Optional[DTypeLike] = None,
-    length: Optional[int] = None,
-    out: Optional[np.ndarray] = None,
-) -> np.ndarray:
-    # The functionality in this implementation are basically derived from
-    # librosa v0.10.1:
-    # https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
-
-    if n_fft is None:
-        n_fft = 2 * (stft_matrix.shape[-2] - 1)
-
-    # By default, use the entire frame
-    if win_length is None:
-        win_length = n_fft
-
-    # Set the default hop, if it's not already specified
-    if hop_length is None:
-        hop_length = int(win_length // 4)
-
-    ifft_window = get_window(window, win_length, fftbins=True)
-
-    # Pad out to match n_fft, and add broadcasting axes
-    ifft_window = pad_center(ifft_window, size=n_fft)
-    ifft_window = expand_to(ifft_window, ndim=stft_matrix.ndim, axes=-2)
-
-    # For efficiency, trim STFT frames according to signal length if available
-    if length:
-        if center:
-            padded_length = length + 2 * (n_fft // 2)
-        else:
-            padded_length = length
-        n_frames = min(stft_matrix.shape[-1], int(np.ceil(padded_length / hop_length)))
-    else:
-        n_frames = stft_matrix.shape[-1]
-
-    if dtype is None:
-        dtype = dtype_c2r(stft_matrix.dtype)
-
-    shape = list(stft_matrix.shape[:-2])
-    expected_signal_len = n_fft + hop_length * (n_frames - 1)
-
-    if length:
-        expected_signal_len = length
-    elif center:
-        expected_signal_len -= 2 * (n_fft // 2)
-
-    shape.append(expected_signal_len)
-
-    if out is None:
-        y = np.zeros(shape, dtype=dtype)
-    elif not np.allclose(out.shape, shape):
-        raise ValueError(f"Shape mismatch for provided output array " f"out.shape={out.shape} != {shape}")
-    else:
-        y = out
-        # Since we'll be doing overlap-add here, this needs to be initialized to zero.
-        y.fill(0.0)
-
-    if center:
-        # First frame that does not depend on padding
-        #  k * hop_length - n_fft//2 >= 0
-        # k * hop_length >= n_fft // 2
-        # k >= (n_fft//2 / hop_length)
-
-        start_frame = int(np.ceil((n_fft // 2) / hop_length))
-
-        # Do overlap-add on the head block
-        ytmp = ifft_window * fft.irfft(stft_matrix[..., :start_frame], n=n_fft, axis=-2)
-
-        shape[-1] = n_fft + hop_length * (start_frame - 1)
-        head_buffer = np.zeros(shape, dtype=dtype)
-
-        __overlap_add(head_buffer, ytmp, hop_length)
-
-        # If y is smaller than the head buffer, take everything
-        if y.shape[-1] < shape[-1] - n_fft // 2:
-            y[..., :] = head_buffer[..., n_fft // 2 : y.shape[-1] + n_fft // 2]
-        else:
-            # Trim off the first n_fft//2 samples from the head and copy into target buffer
-            y[..., : shape[-1] - n_fft // 2] = head_buffer[..., n_fft // 2 :]
-
-        # This offset compensates for any differences between frame alignment
-        # and padding truncation
-        offset = start_frame * hop_length - n_fft // 2
-
-    else:
-        start_frame = 0
-        offset = 0
-
-    n_columns = int(MAX_MEM_BLOCK // (np.prod(stft_matrix.shape[:-1]) * stft_matrix.itemsize))
-    n_columns = max(n_columns, 1)
-
-    frame = 0
-    for bl_s in range(start_frame, n_frames, n_columns):
-        bl_t = min(bl_s + n_columns, n_frames)
-
-        # invert the block and apply the window function
-        ytmp = ifft_window * fft.irfft(stft_matrix[..., bl_s:bl_t], n=n_fft, axis=-2)
-
-        # Overlap-add the istft block starting at the i'th frame
-        __overlap_add(y[..., frame * hop_length + offset :], ytmp, hop_length)
-
-        frame += bl_t - bl_s
-
-    # Normalize by sum of squared window
-    ifft_window_sum = window_sumsquare(
-        window=window,
-        n_frames=n_frames,
-        win_length=win_length,
-        n_fft=n_fft,
-        hop_length=hop_length,
-        dtype=dtype,
-    )
-
-    if center:
-        start = n_fft // 2
-    else:
-        start = 0
-
-    ifft_window_sum = fix_length(ifft_window_sum[..., start:], size=y.shape[-1])
-
-    approx_nonzero_indices = ifft_window_sum > tiny(ifft_window_sum)
-
-    y[..., approx_nonzero_indices] /= ifft_window_sum[approx_nonzero_indices]
-
-    return y
-
-
-def spectrogram(
-    *,
-    y: Optional[np.ndarray] = None,
-    S: Optional[np.ndarray] = None,
-    n_fft: Optional[int] = 2048,
-    hop_length: Optional[int] = 512,
-    power: float = 1,
-    win_length: Optional[int] = None,
-    window: _WindowSpec = "hann",
-    center: bool = True,
-    pad_mode: _PadModeSTFT = "constant",
-) -> Tuple[np.ndarray, int]:
-    if S is not None:
-        # Infer n_fft from spectrogram shape, but only if it mismatches
-        if n_fft is None or n_fft // 2 + 1 != S.shape[-2]:
-            n_fft = 2 * (S.shape[-2] - 1)
-    else:
-        # Otherwise, compute a magnitude spectrogram from input
-        if n_fft is None:
-            raise ValueError(f"Unable to compute spectrogram with n_fft={n_fft}")
-        if y is None:
-            raise ValueError("Input signal must be provided to compute a spectrogram")
-        S = (
-            np.abs(
-                stft(
-                    y,
-                    n_fft=n_fft,
-                    hop_length=hop_length,
-                    win_length=win_length,
-                    center=center,
-                    window=window,
-                    pad_mode=pad_mode,
-                )
-            )
-            ** power
-        )
-
-    return S, n_fft
-
-
-def mfcc_stats(
-    y: Optional[np.ndarray] = None,
-    sr: int = 22050,
-    S: Optional[np.ndarray] = None,
-    n_mfcc: int = 13,
-    dct_type: int = 2,
-    norm: Optional[str] = "ortho",
-    lifter: float = 0,
-    export: str = "array",
-    **kwargs: Any,
-) -> Union[np.ndarray, dict]:
-    mfcc_arr = mfcc(y=y, sr=sr, S=S, n_mfcc=n_mfcc, dct_type=dct_type, norm=norm, lifter=lifter, **kwargs)
-    delta_arr = delta(mfcc_arr)
-
-    mfcc_mean = np.mean(mfcc_arr, axis=1)
-    mfcc_std = np.std(mfcc_arr, axis=1)
-    delta_mean = np.mean(delta_arr, axis=1)
-    delta2_mean = np.mean(delta(mfcc_arr, order=2), axis=1)
-
-    if export == "array":
-        return np.concatenate([mfcc_mean, mfcc_std, delta_mean, delta2_mean], axis=1)
-    elif export == "dict":
-        return {
-            "mfcc_mean": mfcc_mean,
-            "mfcc_std": mfcc_std,
-            "delta_mean": delta_mean,
-            "delta2_mean": delta2_mean,
-        }
-    else:
-        raise ValueError(f"Unsupported export={export}")
-
-
-def delta(
-    data: np.ndarray,
-    *,
-    width: int = 9,
-    order: int = 1,
-    axis: int = -1,
-    mode: str = "interp",
-    **kwargs: Any,
-) -> np.ndarray:
-    data = np.atleast_1d(data)
-
-    if mode == "interp" and width > data.shape[axis]:
-        raise ValueError(f"when mode='interp', width={width} " f"cannot exceed data.shape[axis]={data.shape[axis]}")
-
-    if width < 3 or np.mod(width, 2) != 1:
-        raise ValueError("width must be an odd integer >= 3")
-
-    if order <= 0 or not isinstance(order, (int, np.integer)):
-        raise ValueError("order must be a positive integer")
-
-    kwargs.pop("deriv", None)
-    kwargs.setdefault("polyorder", order)
-    result: np.ndarray = scipy.signal.savgol_filter(data, width, deriv=order, axis=axis, mode=mode, **kwargs)
-    return result
-
-
-def mfcc(
-    y: Optional[np.ndarray] = None,
-    sr: int = 22050,
-    S: Optional[np.ndarray] = None,
-    n_mfcc: int = 20,
-    dct_type: int = 2,
-    norm: Optional[str] = "ortho",
-    lifter: float = 0,
-    **kwargs: Any,
-) -> np.ndarray:
-    if S is None:
-        # multichannel behavior may be different due to relative noise floor
-        # differences between channels
-        S = power_to_db(melspectrogram(y=y, sr=sr, **kwargs))
-
-    M: np.ndarray = scipy.fftpack.dct(S, axis=-2, type=dct_type, norm=norm)[..., :n_mfcc, :]
-
-    if lifter > 0:
-        # shape lifter for broadcasting
-        LI = np.sin(np.pi * np.arange(1, 1 + n_mfcc, dtype=M.dtype) / lifter)
-        LI = expand_to(LI, ndim=S.ndim, axes=-2)
-
-        M *= 1 + (lifter / 2) * LI
-        return M
-    elif lifter == 0:
-        return M
-    else:
-        raise ValueError(f"MFCC lifter={lifter} must be a non-negative number")
-
-
-def melspectrogram(
-    *,
-    y: Optional[np.ndarray] = None,
-    sr: float = 22050,
-    S: Optional[np.ndarray] = None,
+def compute_mel_spectrogram(
+    signal: np.ndarray,
+    sr: int,
     n_fft: int = 2048,
     hop_length: int = 512,
-    win_length: Optional[int] = None,
-    window: _WindowSpec = "hann",
-    center: bool = True,
-    pad_mode: _PadModeSTFT = "constant",
-    power: float = 2.0,
-    **kwargs: Any,
+    n_mels: int = 128,
+    fmin: Optional[float] = None,
+    fmax: Optional[float] = None,
 ) -> np.ndarray:
-    S, n_fft = spectrogram(
-        y=y,
-        S=S,
-        n_fft=n_fft,
-        hop_length=hop_length,
-        power=power,
-        win_length=win_length,
-        window=window,
-        center=center,
-        pad_mode=pad_mode,
-    )
+    """Computes the Mel spectrogram of a signal.
 
-    # Build a Mel filter
-    mel_basis = mel_filter(sr=sr, n_fft=n_fft, **kwargs)
+    Args:
+        signal: np.ndarray of shape (n_samples,) with the input signal.
+        sr: Integer indicating the sampling rate of the signal.
+        n_fft: Integer with the length of the FFT window. Defaults to 2048.
+        hop_length: Integer with the number of samples between successive
+            frames. Defaults to 512.
+        n_mels: Integer with the number of Mel bands to generate. Defaults
+            to 128.
+        fmin: Float to indicate the lowest frequency to include in the
+            spectrogram (in Hz). If None, it defaults to 0.
+        fmax: Float to indicate the highest frequency to include in the
+            spectrogram (in Hz). If None, it defaults to `sr / 2.0`.
 
-    melspec: np.ndarray = np.einsum("...ft,mf->...mt", S, mel_basis, optimize=True)
-    return melspec
-
-
-def power_to_db(
-    S: _ScalarOrSequence[_ComplexLike_co],
-    *,
-    ref: Union[float, Callable] = 1.0,
-    amin: float = 1e-10,
-    top_db: Optional[float] = 80.0,
-) -> Union[np.floating[Any], np.ndarray]:
-    # The functionality in this implementation are basically derived from
-    # librosa v0.10.1:
-    # https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
-
-    S = np.asarray(S)
-
-    if amin <= 0:
-        raise ValueError("amin must be strictly positive")
-
-    if np.issubdtype(S.dtype, np.complexfloating):
-        warnings.warn(
-            "power_to_db was called on complex input so phase "
-            "information will be discarded. To suppress this warning, "
-            "call power_to_db(np.abs(D)**2) instead.",
-            stacklevel=2,
-        )
-        magnitude = np.abs(S)
-    else:
-        magnitude = S
-
-    if callable(ref):
-        # User supplied a function to calculate reference power
-        ref_value = ref(magnitude)
-    else:
-        ref_value = np.abs(ref)
-
-    log_spec: np.ndarray = 10.0 * np.log10(np.maximum(amin, magnitude))
-    log_spec -= 10.0 * np.log10(np.maximum(amin, ref_value))
-
-    if top_db is not None:
-        if top_db < 0:
-            raise ValueError("top_db must be non-negative")
-        log_spec = np.maximum(log_spec, log_spec.max() - top_db)
-
-    return log_spec
-
-
-def db_to_power(S_db: np.ndarray, *, ref: float = 1.0) -> np.ndarray:
-    # The functionality in this implementation is basically derived from
-    # librosa v0.10.1:
-    # https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
-    """Convert a dB-scale spectrogram to a power spectrogram.
-
-    This effectively inverts ``power_to_db``::
-
-        db_to_power(S_db) ~= ref * 10.0**(S_db / 10)
+    Returns:
+        mel_spectrogram: np.ndarray with the mel spectrogram of the signal.
     """
-    return ref * np.power(10.0, 0.1 * S_db)
+    if fmin is None:
+        fmin = 0
+    if fmax is None:
+        fmax = sr / 2.0
+
+    # Compute power spectrogram
+    window = get_window("hann", n_fft)
+    _, _, Sxx = scipy.signal.stft(signal, fs=sr, window=window, nperseg=n_fft, noverlap=n_fft - hop_length)
+    power_spectrogram = np.abs(Sxx) ** 2
+
+    # Compute Mel filterbanks
+    mel_filters = _compute_mel_filterbanks(sr, n_fft, n_mels, fmin, fmax)
+
+    # Apply Mel filterbanks to power spectrogram
+    mel_spectrogram = np.dot(mel_filters, power_spectrogram)
+
+    return mel_spectrogram
 
 
-def amplitude_to_db(
-    S: np.ndarray,
-    *,
-    ref: Union[float, Callable] = 1.0,
-    amin: float = 1e-5,
-    top_db: Optional[float] = 80.0,
-) -> np.ndarray:
-    # The functionality in this implementation is basically derived from
-    # librosa v0.10.1:
-    # https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
-    """Convert an amplitude spectrogram to dB-scaled spectrogram.
+def _compute_mel_filterbanks(sr: int, n_fft: int, n_mels: int, fmin: float, fmax: float) -> np.ndarray:
+    """Computes Mel filterbanks.
 
-    This is equivalent to ``power_to_db(S**2, ref=ref**2, amin=amin**2, top_db=top_db)``,
-    but is provided for convenience.
+    Args:
+        sr: Integer with the sampling rate of the signal.
+        n_fft: Integer with the length of the FFT window.
+        n_mels: Integer with the number of Mel bands to generate.
+        fmin: Float with the lowest frequency to include in the spectrogram
+            (in Hz).
+        fmax: Float with the highest frequency to include in the spectrogram
+            (in Hz).
+
+    Returns:
+        mel_filters: np.ndarray with the Mel filterbanks.
     """
-    S = np.asarray(S)
+    mel_min = 0 if fmin == 0 else _hz_to_mel(fmin)
+    mel_max = _hz_to_mel(fmax)
+    mel_points = np.linspace(mel_min, mel_max, n_mels + 2)
+    hz_points = _mel_to_hz(mel_points)
+    bin_points = np.floor((n_fft + 1) * hz_points / sr).astype(int)
 
-    if np.issubdtype(S.dtype, np.complexfloating):
-        warnings.warn(
-            "amplitude_to_db was called on complex input so phase "
-            "information will be discarded. To suppress this warning, "
-            "call amplitude_to_db(np.abs(S)) instead.",
-            stacklevel=2,
-        )
+    filters = np.zeros((n_mels, n_fft // 2 + 1))
 
-    magnitude = np.abs(S)
+    for i in range(1, n_mels + 1):
+        filters[i - 1, bin_points[i - 1] : bin_points[i]] = (
+            np.arange(bin_points[i - 1], bin_points[i]) - bin_points[i - 1]
+        ) / (bin_points[i] - bin_points[i - 1])
+        filters[i - 1, bin_points[i] : bin_points[i + 1]] = 1 - (
+            np.arange(bin_points[i], bin_points[i + 1]) - bin_points[i]
+        ) / (bin_points[i + 1] - bin_points[i])
 
-    if callable(ref):
-        # User supplied a function to calculate reference power
-        ref_value = ref(magnitude)
-    else:
-        ref_value = np.abs(ref)
-
-    power = np.square(magnitude, out=magnitude)
-
-    return power_to_db(power, ref=ref_value**2, amin=amin**2, top_db=top_db)
+    return filters
 
 
-def db_to_amplitude(S_db: np.ndarray, *, ref: float = 1.0) -> np.ndarray:
-    """Convert a dB-scaled spectrogram to an amplitude spectrogram.
+def _hz_to_mel(freq: float) -> float:
+    """Converts Hz to Mel scale.
 
-    This effectively inverts `amplitude_to_db`::
+    Args:
+        freq: Float with the frequency value in Hz.
 
-        db_to_amplitude(S_db) ~= 10.0**(0.5 * S_db/10 + log10(ref))
+    Returns:
+        mel: Float with the frequency value in Mel scale.
     """
-    # The functionality in this implementation is basically derived from
-    # librosa v0.10.1:
-    # https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
-    return db_to_power(S_db, ref=ref**2) ** 0.5
+    return 2595 * np.log10(1 + freq / 700)
+
+
+def _mel_to_hz(mel: float) -> float:
+    """Converts Mel scale to Hz.
+
+    Args:
+        mel: Float with the frequency value in Mel scale.
+
+    Returns:
+        freq: Float with the frequency value in Hz.
+    """
+    return 700 * (10 ** (mel / 2595) - 1)

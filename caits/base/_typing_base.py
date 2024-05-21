@@ -16,6 +16,7 @@ _FloatLike_co = Union[_IntLike_co, float, "np.floating[Any]"]
 _WindowSpec = Union[str, Tuple[Any, ...], float, Callable[[int], np.ndarray], ArrayLike]
 _ComplexLike_co = Union[_FloatLike_co, complex, "np.complexfloating[Any, Any]"]
 
+
 _T = TypeVar("_T")
 
 _STFTPad = Literal[
