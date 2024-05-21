@@ -6,16 +6,11 @@ from sklearn.model_selection import train_test_split as sklearn_tts
 
 
 class Dataset:
-    def __init__(
-            self,
-            X: List[DataFrame],
-            y: List[str],
-            id: List[str]
-    ) -> None:
+    def __init__(self, X: List[DataFrame], y: List[str], id: List[str]) -> None:
         # Check if X, y, and id are lists
         if not all(isinstance(data, list) for data in [X, y, id]):
             raise TypeError("X, y, and id must be lists.")
-        
+
         # Check that all inputs have the same length
         if not (len(X) == len(y) == len(id)):
             raise ValueError("All input lists must have the same length.")
@@ -66,15 +61,11 @@ class Dataset:
 
             yield X_batch, y_batch, id_batch
 
-    def unify(self, other: 'Dataset') -> 'Dataset':
+    def unify(self, other: "Dataset") -> "Dataset":
         """Concatenates two Dataset objects by appending their rows."""
 
-        return Dataset(
-            self.X + other.X,
-            self.y + other.y,
-            self._id + other._id
-        )
-    
+        return Dataset(self.X + other.X, self.y + other.y, self._id + other._id)
+
     def to_numpy(self, dtype=np.float32):
         """Converts data to NumPy arrays."""
         X_np = np.array(self.X, dtype=dtype)
