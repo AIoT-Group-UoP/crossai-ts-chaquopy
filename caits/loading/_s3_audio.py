@@ -6,10 +6,7 @@ import pandas as pd
 import soundfile as sf
 
 
-def s3_wav_loader(
-        file_content: bytes,
-        channels: List[str] = ["channel_1"]
-) -> pd.DataFrame:
+def s3_wav_loader(file_content: bytes, channels: List[str] = ["channel_1"]) -> pd.DataFrame:
     """Loads an audio file into a DataFrame.
 
     Args:
@@ -30,13 +27,13 @@ def s3_wav_loader(
 
 
 def s3_audio_loader(
-        bucket: str,
-        prefix: str,
-        endpoint_url: str,
-        mode: str = "soundfile",
-        format: str = "wav",
-        channels: List[str] = ["channel_1"],
-        export: str = "dict"
+    bucket: str,
+    prefix: str,
+    endpoint_url: str,
+    mode: str = "soundfile",
+    format: str = "wav",
+    channels: List[str] = ["channel_1"],
+    export: str = "dict",
 ) -> Union[pd.DataFrame, dict]:
     """Loads audio files from a directory into a DataFrame.
 
@@ -74,14 +71,6 @@ def s3_audio_loader(
                         print(f"Error loading file {file_path}: {e}")
 
     if export == "df":
-        return pd.DataFrame({
-            "X": all_features,
-            "y": all_y,
-            "id": all_id
-        })
+        return pd.DataFrame({"X": all_features, "y": all_y, "id": all_id})
     elif export == "dict":
-        return {
-            "X": all_features,
-            "y": all_y,
-            "id": all_id
-        }
+        return {"X": all_features, "y": all_y, "id": all_id}

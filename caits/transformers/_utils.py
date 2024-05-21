@@ -100,8 +100,8 @@ class DatasetToArray(BaseEstimator, TransformerMixin):
 
         return _X.squeeze(axis=-1)
 
-def sklearn_to_pkl(
-        model: Union[BaseEstimator, Pipeline], filename: str) -> None:
+
+def sklearn_to_pkl(model: Union[BaseEstimator, Pipeline], filename: str) -> None:
     """Saves a scikit-learn model or pipeline to a .pkl file using joblib.
 
     This function uses the joblib library to serialize and save scikit-learn
@@ -143,12 +143,14 @@ def sklearn_to_pkl(
                     BaseEstimator or Pipeline.
     """
     if not isinstance(model, (BaseEstimator, Pipeline)):
-        raise ValueError("The model must be a scikit-learn \
-                         BaseEstimator or Pipeline instance.")
+        raise ValueError(
+            "The model must be a scikit-learn \
+                         BaseEstimator or Pipeline instance."
+        )
 
     # Ensure the filename ends with '.pkl'
-    if not filename.endswith('.pkl'):
-        filename += '.pkl'
+    if not filename.endswith(".pkl"):
+        filename += ".pkl"
 
     # Save the model to the specified file
     dump(model, filename)

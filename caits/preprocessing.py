@@ -1,4 +1,5 @@
 from math import ceil, log
+from typing import List
 
 import numpy as np
 
@@ -116,7 +117,7 @@ def trim_signal(array: np.ndarray, axis=0, epsilon: float = 1e-5) -> np.ndarray:
     return array[start:stop]
 
 
-def create_chunks(array: np.ndarray, chunk_length: int) -> list[np.ndarray]:
+def create_chunks(array: np.ndarray, chunk_length: int) -> List[np.ndarray]:
     """
 
     Args:

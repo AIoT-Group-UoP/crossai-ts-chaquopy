@@ -11,10 +11,7 @@ from caits.preprocessing import resample_2d
 
 
 def wav_loader(
-        mode: str = "soundfile",
-        file_path: str = None,
-        channels: List[str] = None,
-        target_sr: int = None
+    mode: str = "soundfile", file_path: str = None, channels: List[str] = None, target_sr: int = None
 ) -> pd.DataFrame:
     """Loads and optionally resamples a mono or multichannel audio
     file into a DataFrame, ensuring the output is always 2D.
@@ -32,17 +29,20 @@ def wav_loader(
     # Load audio data
     if mode == "scipy":
         from scipy.io import wavfile
+
         sample_rate, audio_data = wavfile.read(file_path)
         if audio_data.ndim == 1:
             audio_data = audio_data.reshape(-1, 1)
     elif mode == "pydub":
         from pydub import AudioSegment
+
         audio = AudioSegment.from_wav(file_path)
         sample_rate = audio.frame_rate
         audio_data = np.array(audio.get_array_of_samples())
         audio_data = audio_data.reshape((-1, audio.channels))
     elif mode == "soundfile":
         import soundfile as sf
+
         audio_data, sample_rate = sf.read(file_path, always_2d=True)
     else:
         raise ValueError(f"Unsupported mode: {mode}")
@@ -62,13 +62,13 @@ def wav_loader(
 
 
 def audio_loader(
-        dataset_path: str,
-        mode: str = "soundfile",
-        format: str = "wav",
-        channels: list = ["Ch_1"],
-        export: str = "dict",
-        target_sr: int = None,
-        classes: Optional[List[str]] = None
+    dataset_path: str,
+    mode: str = "soundfile",
+    format: str = "wav",
+    channels: list = ["Ch_1"],
+    export: str = "dict",
+    target_sr: int = None,
+    classes: Optional[List[str]] = None,
 ) -> Union[pd.DataFrame, dict]:
     """Loads audio files from a directory into a DataFrame
     or dictionary with optional resampling.
@@ -101,8 +101,7 @@ def audio_loader(
         if classes is None or subdir in classes:
             file = os.path.basename(file_path)
             try:
-                df = wav_loader(mode, file_path, channels,
-                                target_sr=target_sr)
+                df = wav_loader(mode, file_path, channels, target_sr=target_sr)
                 all_features.append(df)
                 all_y.append(subdir)
                 all_id.append(file)
@@ -110,17 +109,9 @@ def audio_loader(
                 print(f"Error loading file {file_path}: {e}")
 
     if export == "df":
-        return pd.DataFrame({
-            "X": all_features,
-            "y": all_y,
-            "id": all_id
-        })
+        return pd.DataFrame({"X": all_features, "y": all_y, "id": all_id})
     elif export == "dict":
-        return {
-            "X": all_features,
-            "y": all_y,
-            "id": all_id
-        }
+        return {"X": all_features, "y": all_y, "id": all_id}
 
 
 def wav_specs_check(wav_file_path: str) -> dict:
@@ -135,7 +126,7 @@ def wav_specs_check(wav_file_path: str) -> dict:
     Returns:
         A dictionary containing the specifications of the WAV file.
     """
-    with wave.open(wav_file_path, 'rb') as wf:
+    with wave.open(wav_file_path, "rb") as wf:
         num_channels = wf.getnchannels()
         sr = wf.getframerate()
         print(f"Sample rate: {sr} Hz")

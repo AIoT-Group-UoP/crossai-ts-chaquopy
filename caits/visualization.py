@@ -7,12 +7,12 @@ from matplotlib.figure import Figure as Fig
 
 
 def plot_prediction_probas(
-        probabilities: np.ndarray,
-        sampling_rate: int,
-        Ws: float,
-        overlap_percentage: float,
-        class_names: Optional[List[str]] = None,
-        figsize: Tuple[int, int] = (14, 6)
+    probabilities: np.ndarray,
+    sampling_rate: int,
+    Ws: float,
+    overlap_percentage: float,
+    class_names: Optional[List[str]] = None,
+    figsize: Tuple[int, int] = (14, 6),
 ) -> Fig:
     """Plots prediction probabilities as small horizontal lines, adjusting
     for window overlap. Only non-overlapping parts of the window segments
@@ -50,8 +50,7 @@ def plot_prediction_probas(
             start_idx = j * OP_step
             end_idx = start_idx + OP_step
 
-            ax.hlines(prob, start_idx, end_idx, colors=colors[i], lw=2,
-                      label=label if j == 0 else "")
+            ax.hlines(prob, start_idx, end_idx, colors=colors[i], lw=2, label=label if j == 0 else "")
 
     # Setting labels and title
     ax.set_xlabel("Instances")
@@ -67,9 +66,7 @@ def plot_prediction_probas(
 
 
 def plot_interpolated_probas(
-        interpolated_probs: np.ndarray,
-        class_names: Optional[List[str]] = None,
-        figsize: Tuple[int, int] = (14, 6)
+    interpolated_probs: np.ndarray, class_names: Optional[List[str]] = None, figsize: Tuple[int, int] = (14, 6)
 ) -> plt.Figure:
     """Plots the interpolated prediction probabilities for each class.
 
@@ -110,7 +107,7 @@ def export_fig(
     export: str = "save",
     tight_layout: bool = True,
     fig_extension: str = "png",
-    resolution: Union[float, str] = "figure"
+    resolution: Union[float, str] = "figure",
 ) -> None:
     """
     Exports a matplotlib figure object by saving, showing, or doing both.
@@ -146,16 +143,17 @@ def export_fig(
 
         file_path = os.path.join(save_path, f"{fig_id}.{fig_extension}")
         dpi = resolution if isinstance(resolution, float) else None
-        fig_object.savefig(file_path, format=fig_extension,
-                           bbox_inches="tight", dpi=dpi)
+        fig_object.savefig(file_path, format=fig_extension, bbox_inches="tight", dpi=dpi)
         print(f"Figure saved to {file_path}")
 
     if "show" in export:
         plt.show()
 
     if "save" not in export and "show" not in export:
-        raise ValueError("Invalid export option. Use 'save', 'show', \
-                          or 'both'.")
+        raise ValueError(
+            "Invalid export option. Use 'save', 'show', \
+                          or 'both'."
+        )
 
 
 def plot_signal(
@@ -164,7 +162,7 @@ def plot_signal(
     mode: str = "samples",
     name: str = "Signal",
     channels: Optional[Union[List[str], str]] = None,
-    figsize: Tuple[int, int] = (10, 4)
+    figsize: Tuple[int, int] = (10, 4),
 ) -> plt.Figure:
     """Plots a signal and returns the matplotlib figure object.
 
@@ -213,12 +211,7 @@ def plot_signal(
 
 
 def plot_spectrogram(
-        f: np.ndarray,
-        t: np.ndarray,
-        spec: np.ndarray,
-        factor: int = 1,
-        log: str = None,
-        plot_title: str = "Spectrogram"
+    f: np.ndarray, t: np.ndarray, spec: np.ndarray, factor: int = 1, log: str = None, plot_title: str = "Spectrogram"
 ) -> None:
     """Plots the spectrogram.
 
@@ -253,9 +246,7 @@ def plot_spectrogram(
     plt.show()
 
 
-def plot_simple_spectrogram(
-        spectrogram: np.ndarray,
-        title: str = "Spectrogram") -> None:
+def plot_simple_spectrogram(spectrogram: np.ndarray, title: str = "Spectrogram") -> None:
     """Simple function that plots a Spectrogram.
 
     Args:
