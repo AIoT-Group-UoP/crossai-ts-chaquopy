@@ -1,11 +1,9 @@
 import numpy as np
+
 from caits.performance.metrics import intersection_over_union
 
 
-def get_non_overlap_probas(
-        probabilities: np.ndarray,
-        overlap_percentage: float
-) -> np.ndarray:
+def get_non_overlap_probas(probabilities: np.ndarray, overlap_percentage: float) -> np.ndarray:
     """Extracts probabilities corresponding to the non-overlapping part of
     each window (of the time series instances), based on the specified overlap
     percentage. This function is useful in scenarios where predictions are made
@@ -49,10 +47,7 @@ def get_non_overlap_probas(
     return non_overlap_probs
 
 
-def apply_probability_threshold(
-        interpolated_probs: np.ndarray,
-        threshold: float
-) -> np.ndarray:
+def apply_probability_threshold(interpolated_probs: np.ndarray, threshold: float) -> np.ndarray:
     """Applies a probability threshold to the interpolated probabilities
     matrix. Points exceeding the threshold are left unchanged, while
     others are set to 0.
@@ -67,18 +62,13 @@ def apply_probability_threshold(
                        same shape.
     """
     # Apply thresholding
-    modified_probs = np.where(
-        interpolated_probs > threshold,
-        interpolated_probs, 0
-    )
+    modified_probs = np.where(interpolated_probs > threshold, interpolated_probs, 0)
 
     return modified_probs
 
 
 def apply_duration_threshold(
-        interpolated_probs: np.ndarray,
-        sampling_rate: int,
-        duration_threshold: float
+    interpolated_probs: np.ndarray, sampling_rate: int, duration_threshold: float
 ) -> np.ndarray:
     """Applies a duration threshold to the interpolated probabilities.
     Any continuous segments below the duration threshold are set to 0.
@@ -126,7 +116,6 @@ def apply_duration_threshold(
 
 
 def get_continuous_events(threshold_probas: np.ndarray) -> list[tuple]:
-
     significant_segments = []
 
     # Iterate over each class to find significant segments
@@ -146,9 +135,9 @@ def get_continuous_events(threshold_probas: np.ndarray) -> list[tuple]:
 
 
 def classify_events(
-        predicted_events: list[tuple],
-        ground_truth_events: list[tuple],
-        IoU_th: float,
+    predicted_events: list[tuple],
+    ground_truth_events: list[tuple],
+    IoU_th: float,
 ) -> tuple:
     """Classifies predicted events into Insertions, Correct identifications,
     Substitutions, and Deletions based on IoU score, class labels.
@@ -179,20 +168,13 @@ def classify_events(
     insertions = corrects = substitutions = deletions = 0
 
     for predicted_event in predicted_events:
-
         predicted_label = predicted_event[2]
 
         # Calculate IoU for the predicted event with
         # all ground truth events and check labels
         # [(iou, label), ....., (iou, label)]
         matches = [
-            (
-                intersection_over_union(
-                    (predicted_event[0], predicted_event[1]),
-                    (gt_event[0], gt_event[1])
-                ),
-                gt_event[2]
-            )
+            (intersection_over_union((predicted_event[0], predicted_event[1]), (gt_event[0], gt_event[1])), gt_event[2])
             for gt_event in ground_truth_events
         ]
 

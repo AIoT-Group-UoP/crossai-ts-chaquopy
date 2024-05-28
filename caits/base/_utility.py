@@ -3,11 +3,13 @@
 # https://github.com/librosa/librosa/blob/main/librosa/util/utils.py
 # https://github.com/librosa/librosa/blob/main/librosa/filters.py
 # https://github.com/librosa/librosa/blob/main/librosa/core/spectrum.py
-from typing import Optional, Union, Callable, Tuple, Any, Sequence, List, Dict
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
+
 import numpy as np
 import scipy
-from numpy.typing import ArrayLike, DTypeLike
 from numpy.lib.stride_tricks import as_strided
+from numpy.typing import ArrayLike, DTypeLike
+
 from ._typing_base import _FloatLike_co, _WindowSpec
 
 
@@ -20,16 +22,10 @@ def frame(
     writeable: bool = False,
     subok: bool = False,
 ) -> np.ndarray:
-    
-
-
     x = np.array(x, copy=False, subok=subok)
 
     if x.shape[axis] < frame_length:
-        raise ValueError(
-            f"Input is too short (n={x.shape[axis]:d}) for "
-            f"frame_length={frame_length:d}"
-        )
+        raise ValueError(f"Input is too short (n={x.shape[axis]:d}) for " f"frame_length={frame_length:d}")
 
     if hop_length < 1:
         raise ValueError(f"Invalid hop_length: {hop_length:d}")
@@ -42,10 +38,7 @@ def frame(
     x_shape_trimmed[axis] -= frame_length - 1
 
     out_shape = tuple(x_shape_trimmed) + tuple([frame_length])
-    xw = as_strided(
-        x, strides=out_strides, shape=out_shape, subok=subok,
-        writeable=writeable
-    )
+    xw = as_strided(x, strides=out_strides, shape=out_shape, subok=subok, writeable=writeable)
 
     if axis < 0:
         target_axis = axis - 1
@@ -70,7 +63,6 @@ def get_window(
         return window(Nx)
 
     elif isinstance(window, (str, tuple)) or np.isscalar(window):
-
         win: np.ndarray = scipy.signal.get_window(window, Nx, fftbins=fftbins)
         return win
 
@@ -83,14 +75,7 @@ def get_window(
         raise ValueError(f"Invalid window specification: {window!r}")
 
 
-def pad_center(
-    data: np.ndarray,
-    *,
-    size: int,
-    axis: int = -1,
-    **kwargs: Any
-) -> np.ndarray:
-
+def pad_center(data: np.ndarray, *, size: int, axis: int = -1, **kwargs: Any) -> np.ndarray:
     kwargs.setdefault("mode", "constant")
 
     n = data.shape[axis]
@@ -101,19 +86,12 @@ def pad_center(
     lengths[axis] = (lpad, int(size - n - lpad))
 
     if lpad < 0:
-        raise ValueError(
-            f"Target size ({size:d}) must be at least input size ({n:d})"
-        )
+        raise ValueError(f"Target size ({size:d}) must be at least input size ({n:d})")
 
     return np.pad(data, lengths, **kwargs)
 
 
-def expand_to(
-    x: np.ndarray,
-    *,
-    ndim: int,
-    axes: Union[int, slice, Sequence[int], Sequence[slice]]
-) -> np.ndarray:
+def expand_to(x: np.ndarray, *, ndim: int, axes: Union[int, slice, Sequence[int], Sequence[slice]]) -> np.ndarray:
     # Force axes into a tuple
     axes_tup: Tuple[int]
     try:
@@ -122,15 +100,10 @@ def expand_to(
         axes_tup = tuple([axes])  # type: ignore
 
     if len(axes_tup) != x.ndim:
-        raise ValueError(
-            f"Shape mismatch between axes={axes_tup} and input "
-            f"x.shape={x.shape}"
-        )
+        raise ValueError(f"Shape mismatch between axes={axes_tup} and input " f"x.shape={x.shape}")
 
     if ndim < x.ndim:
-        raise ValueError(
-            f"Cannot expand x.shape={x.shape} to fewer dimensions ndim={ndim}"
-        )
+        raise ValueError(f"Cannot expand x.shape={x.shape} to fewer dimensions ndim={ndim}")
 
     shape: List[int] = [1] * ndim
     for i, axi in enumerate(axes_tup):
@@ -217,16 +190,12 @@ def normalize(
     return Snorm
 
 
-def tiny(
-        x: Union[float, np.ndarray]
-) -> _FloatLike_co:
+def tiny(x: Union[float, np.ndarray]) -> _FloatLike_co:
     # Make sure we have an array view
     x = np.asarray(x)
 
     # Only floating types generate a tiny
-    if np.issubdtype(x.dtype, np.floating) or np.issubdtype(
-        x.dtype, np.complexfloating
-    ):
+    if np.issubdtype(x.dtype, np.floating) or np.issubdtype(x.dtype, np.complexfloating):
         dtype = x.dtype
     else:
         dtype = np.dtype(np.float32)
@@ -244,7 +213,6 @@ def window_sumsquare(
     dtype: DTypeLike = np.float32,
     norm: Optional[float] = None,
 ) -> np.ndarray:
-
     if win_length is None:
         win_length = n_fft
 
@@ -284,4 +252,4 @@ def __overlap_add(y, ytmp, hop_length):
         if N > y.shape[-1] - sample:
             N = y.shape[-1] - sample
 
-        y[..., sample: (sample + N)] += ytmp[..., :N, frame]
+        y[..., sample : (sample + N)] += ytmp[..., :N, frame]

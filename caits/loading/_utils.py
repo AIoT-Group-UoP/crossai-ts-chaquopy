@@ -1,7 +1,8 @@
-import yaml
-import os
 import glob
 import json
+import os
+
+import yaml
 from tqdm import tqdm
 
 
@@ -23,7 +24,7 @@ def load_yaml_config(config_path: str) -> dict:
         yaml.YAMLError: If an error occurs during parsing of the YAML content.
     """
     try:
-        with open(config_path, 'r') as file:
+        with open(config_path, "r") as file:
             return yaml.safe_load(file)
     except FileNotFoundError as e:
         raise FileNotFoundError(f"Configuration file \
@@ -55,7 +56,7 @@ def json_loader(dataset_path: str) -> dict:
         # Extract filename without extension
         filename = os.path.splitext(os.path.basename(file_path))[0]
         try:
-            with open(file_path, 'r') as f:
+            with open(file_path, "r") as f:
                 # Assuming the top-level JSON structure is
                 # an object (i.e., a dictionary)
                 data = json.load(f)

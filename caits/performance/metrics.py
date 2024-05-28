@@ -1,5 +1,7 @@
+from typing import Any, Optional, Union
+
 import numpy as np
-from typing import Union, Optional, Any
+
 TensorLike = Union[np.ndarray, Any]
 
 
@@ -9,11 +11,7 @@ def compute_class(predictions: TensorLike) -> np.ndarray:
 
 def compute_entropy(predictions: TensorLike) -> np.ndarray:
     epsilon = np.finfo(float).eps
-    return np.mean(
-        -np.sum(
-            predictions * np.log(predictions + epsilon), axis=2
-        ) / np.log(2), axis=0
-    )
+    return np.mean(-np.sum(predictions * np.log(predictions + epsilon), axis=2) / np.log(2), axis=0)
 
 
 # Global dictionary of metric functions
@@ -27,10 +25,7 @@ _stats_functions = {
 }
 
 
-def prediction_statistics(
-        probabilities: TensorLike,
-        stats: Optional[Union[list[str], str]] = "all"
-) -> dict:
+def prediction_statistics(probabilities: TensorLike, stats: Optional[Union[list[str], str]] = "all") -> dict:
     """Analyzes prediction probabilities to assess model trustworthiness
     and training adequacy. This function computes statistics from prediction
     probabilities, assuming probabilities have the shape
@@ -69,10 +64,7 @@ def prediction_statistics(
     return results
 
 
-def intersection_over_union(
-        predicted_segment: tuple,
-        ground_truth_segment: tuple
-) -> float:
+def intersection_over_union(predicted_segment: tuple, ground_truth_segment: tuple) -> float:
     """Calculates the Intersection over Union (IoU) for a single pair
     of predicted and ground truth segments.
 

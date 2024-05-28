@@ -1,2 +1,2 @@
-from ._properties import *
 from ._pcen import *
+from ._properties import *

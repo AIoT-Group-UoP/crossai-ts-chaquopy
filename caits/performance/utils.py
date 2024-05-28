@@ -1,16 +1,18 @@
-from scipy.interpolate import interp1d
+from typing import Any, Optional, Union
+
 import numpy as np
-from typing import Union, Optional, Any
+from scipy.interpolate import interp1d
+
 TensorLike = Union[np.ndarray, Any]
 
 
 def interpolate_probas(
-        probabilities: np.ndarray,
-        sampling_rate: int,
-        Ws: float,
-        n_points: int = None,
-        kind: Optional[str] = "cubic",
-        clamp: Optional[bool] = True
+    probabilities: np.ndarray,
+    sampling_rate: int,
+    Ws: float,
+    n_points: int = None,
+    kind: Optional[str] = "cubic",
+    clamp: Optional[bool] = True,
 ) -> np.ndarray:
     """Interpolates prediction probabilities for a smoother representation
     over time or samples.
@@ -58,8 +60,7 @@ def interpolate_probas(
     # Perform cubic interpolation for each class
     for i in range(n_classes):
         # Create the interpolator function for the current class
-        interpolator = interp1d(x_original, probabilities[:, i],
-                                kind=kind, fill_value='extrapolate')
+        interpolator = interp1d(x_original, probabilities[:, i], kind=kind, fill_value="extrapolate")
 
         # Apply interpolation and store the results
         interpolated_probs = interpolator(x_interpolated)
@@ -74,11 +75,7 @@ def interpolate_probas(
     return interpolated_probabilities
 
 
-def get_gt_events_from_dict(
-        events: dict,
-        class_names: list[str],
-        sr: int = None
-) -> dict:
+def get_gt_events_from_dict(events: dict, class_names: list[str], sr: int = None) -> dict:
     """Extracts and optionally converts start and end intervals from a given
     JSON structure to samples. The output is a dictionary keyed by the original
     keys from `events`, with values being lists of tuples. Each tuple
@@ -99,9 +96,11 @@ def get_gt_events_from_dict(
             (
                 int(item["start"] * sr) if item.get("type") == "time" else item["start"],
                 int(item["end"] * sr) if item.get("type") == "time" else item["end"],
-                list(class_names).index(item["label"])
-            ) for item in items
-        ] for key, items in events.items()
+                list(class_names).index(item["label"]),
+            )
+            for item in items
+        ]
+        for key, items in events.items()
     }
 
     return intervals

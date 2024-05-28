@@ -1,7 +1,9 @@
-from sklearn.base import BaseEstimator, TransformerMixin
+from typing import Dict, List
+
 import numpy as np
 from pandas import DataFrame
-from typing import List, Dict
+from sklearn.base import BaseEstimator, TransformerMixin
+
 from caits.dataset import Dataset
 
 
@@ -42,10 +44,7 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
 
             # Convert the features_dict to a DataFrame,
             # with channels as columns and features as rows
-            features_df = DataFrame(
-                features_dict,
-                index=[col_name for col_name in df.keys()]
-            ).T
+            features_df = DataFrame(features_dict, index=[col_name for col_name in df.keys()]).T
             transformed_X.append(features_df)
 
         return Dataset(transformed_X, transformed_y, transformed_id)
